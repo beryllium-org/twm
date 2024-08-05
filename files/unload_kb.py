@@ -1,0 +1,7 @@
+vrd("dr_keys")
+vrd("vkloc")
+vrd("keys")
+vrd("vsel")
+vrd("usel")
+vrd("kb")
+vrd("caps")

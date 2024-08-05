@@ -1,0 +1,14 @@
+file 99-twm.lja /boot/boot.d/99-twm.lja
+folder /bin/twm
+file twm.lja /bin/twm.lja
+file hs.py /bin/twm/hs.py
+file init.py /bin/twm/init.py
+file load_fm.py /bin/twm/load_fm.py
+file load_kb.py /bin/twm/load_kb.py
+file load_lock.py /bin/twm/load_lock.py
+file load_settings.py /bin/twm/load_settings.py
+file main.py /bin/twm/main.py
+file unload_fm.py /bin/twm/unload_fm.py
+file unload_kb.py /bin/twm/unload_kb.py
+file unload_lock.py /bin/twm/unload_lock.py
+file unload_settings.py /bin/twm/unload_settings.py
