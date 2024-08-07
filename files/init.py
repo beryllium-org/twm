@@ -6,6 +6,7 @@ vr("p", be.devices["AXP2101"][0])
 vr("t", be.devices["ftouch"][0])
 vr("d", be.devices["DISPLAY"][0])
 vr("b", be.devices["bat"][0])
+vr("a", be.devices["BMA423"][0])
 vr("d").auto_refresh = False
 
 vr("j").trigger_dict = {
@@ -29,12 +30,19 @@ def rt() -> list:
     return vr("t").touches
 
 
-def tsh() -> None:
-    return vr("ri")()[0]
+def ra() -> tuple:
+    return vr("a").acceleration
 
 
-def tlh() -> None:
-    return vr("ri")()[1]
+def moved() -> tuple:
+    tac = vr("ra")()
+    oac = vr("last_accel")
+    vr("last_accel", tac)
+    return (
+        abs(tac[0] - oac[0]) > 0.1
+        or abs(tac[1] - oac[1]) > 0.1
+        or abs(tac[2] - oac[2]) > 0.1
+    )
 
 
 def ctop(data: str) -> None:
@@ -204,6 +212,7 @@ def lm() -> bool:
         freeb = str(freeb)
     vr("j").nwrite("| " + freeb + " bytes free")
     lp = time.monotonic()
+    lm = time.monotonic()
     press = 0
     vr("waitc")()
     try:
@@ -219,7 +228,23 @@ def lm() -> bool:
                         time.sleep(0.05)
                     else:
                         vr("suspend")()
+                        lm = time.monotonic()
                 gc.collect()
+            else:
+                if vr("d").brightness:
+                    if vr("moved")():
+                        lm = time.monotonic()
+                    elif time.monotonic() - lm > 180:
+                        if vr("d").brightness > 0.001:
+                            vr("d").brightness -= 0.001
+                        else:
+                            vr("d").brightness = 0
+                    time.sleep(0.2)
+                elif vr("moved")() or vr("rt")():
+                    vr("d").brightness = 0.005
+                    lm = time.monotonic()
+                else:
+                    time.sleep(0.3)
             vr("clocker")()
             vr("updi")()
             t = vr("rk")()
@@ -239,6 +264,7 @@ def lm() -> bool:
                         return True
                     else:
                         vr("suspend")()
+                        lm = time.monotonic()
                 press = time.monotonic()
             elif vr("lowpow"):
                 be.api.tasks.run()
@@ -316,10 +342,11 @@ vr("rk", rk)
 del rk
 vr("rt", rt)
 del rt
-vr("tsh", tsh)
-del tsh
-vr("tlh", tlh)
-del tlh
+vr("ra", ra)
+vr("last_accel", ra())
+del ra
+vr("moved", moved)
+del moved
 vr("ctop", ctop)
 del ctop
 vr("waitc", waitc)
