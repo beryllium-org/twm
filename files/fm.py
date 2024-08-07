@@ -1,26 +1,16 @@
-vr(
-    "mdict",
-    {
-        1: "Jan",
-        2: "Feb",
-        3: "Mar",
-        4: "Apr",
-        5: "May",
-        6: "Jun",
-        7: "Jul",
-        8: "Aug",
-        9: "Sep",
-        10: "Oct",
-        11: "Nov",
-        12: "Dec",
-    },
-)
+def wany() -> None:
+    k = vr("rk")()
+    t = vr("rt")()
+    while not (k[0] or k[1] or t):
+        k = vr("rk")()
+        t = vr("rt")()
+        time.sleep(0.05)
 
 
 def fselm(filen) -> None:
     while True:
         sel = vr("dmenu")(
-            "File selected | " + filen[0],
+            "File selected | " + filen[0][:10],
             [
                 "File info",
                 "View as text",
@@ -28,7 +18,6 @@ def fselm(filen) -> None:
                 "Execute as a program",
                 "Execute as a ducky script",
             ],
-            hint="Press top left to close. Press Enter to select.",
         )
         if sel == -1:
             break
@@ -44,7 +33,7 @@ def fselm(filen) -> None:
                 sz = f"{int(sz/1073741824)}G"
             modtime = filen[4]
             modtime = (
-                vr("mdict")[modtime.tm_mon]
+                vr("months")[modtime.tm_mon - 1]
                 + " "
                 + str(modtime[2])
                 + " "
@@ -71,35 +60,35 @@ def fselm(filen) -> None:
 
             vr("waitc")()
             vr("refr")()
-            v = vr("ri")()
+            vr("wany")()
         elif sel == 1:
-            vr("d").clear()
+            vr("j").clear()
             with be.api.fs.open(filen[0]) as f:
                 lines = f.readlines()
                 for i in lines[:-1]:
-                    vr("d").nwrite(i)
+                    vr("j").nwrite(i)
                 if lines:
-                    vr("d").nwrite(lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)])
+                    vr("j").nwrite(lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)])
                 vr("waitc")()
                 vr("refr")()
-                v = vr("ri")()
+                vr("wany")()
         elif sel == 2:
             if be.api.fs.isdir("/bin/duckycat.lja") == 0:
                 vr("waitc")()
-                vr("d").clear()
-                vr("d").nwrite("Caternating to host.. ")
+                vr("j").clear()
+                vr("j").nwrite("Caternating to host.. ")
                 vr("refr")()
                 be.based.run("duckycat " + filen[0])
                 if int(be.api.getvar("return")):
-                    vr("d").nwrite("FAIL")
+                    vr("j").nwrite("FAIL")
                 else:
-                    vr("d").nwrite("OK")
+                    vr("j").nwrite("OK")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             else:
-                vr("d").clear()
-                vr("d").nwrite(
+                vr("j").clear()
+                vr("j").nwrite(
                     "Ducky not installed!\n"
                     + "Cannot continue.\n"
                     + "\nPress any key to go back."
@@ -110,62 +99,58 @@ def fselm(filen) -> None:
         elif sel == 3:
             if filen.endswith(".lja"):
                 vr("waitc")()
-                vr("d").clear()
-                vr("d").nwrite("Running in based.. ")
+                vr("j").clear()
+                vr("j").nwrite("Running in based.. ")
                 vr("refr")()
                 be.based.command.exec(filen[0])
-                vr("d").nwrite("Done")
+                vr("j").nwrite("Done")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             elif filen.endswith(".py"):
                 vr("waitc")()
-                vr("d").clear()
-                vr("d").nwrite("Running in python.. ")
+                vr("j").clear()
+                vr("j").nwrite("Running in python.. ")
                 vr("refr")()
                 be.based.command.fpexec(filen[0])
-                vr("d").nwrite("Done")
+                vr("j").nwrite("Done")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             else:
-                vr("d").clear()
-                vr("d").nwrite(
+                vr("j").clear()
+                vr("j").nwrite(
                     "Not an executable!\n"
                     + "Cannot continue.\n"
                     + "\nPress any key to go back."
                 )
                 vr("waitc")()
                 vr("refr")()
-                v = vr("ri")()
+                vr("wany")()
         else:
             if be.api.fs.isdir("/bin/ducky.lja") == 0:
                 vr("waitc")()
-                vr("d").clear()
-                vr("d").nwrite("Running with ducky.. ")
+                vr("j").clear()
+                vr("j").nwrite("Running with ducky.. ")
                 vr("refr")()
                 be.based.run("ducky " + filen[0])
                 if int(be.api.getvar("return")):
-                    vr("d").nwrite("FAIL")
+                    vr("j").nwrite("FAIL")
                 else:
-                    vr("d").nwrite("OK")
+                    vr("j").nwrite("OK")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             else:
-                vr("d").clear()
-                vr("d").nwrite(
+                vr("j").clear()
+                vr("j").nwrite(
                     "Ducky not installed!\n"
                     + "Cannot continue.\n"
                     + "\nPress any key to go back."
                 )
                 vr("waitc")()
                 vr("refr")()
-                v = vr("ri")()
-
-
-vr("fselm", fselm)
-del fselm
+                vr("wany")()
 
 
 def filem() -> None:
@@ -184,7 +169,6 @@ def filem() -> None:
         sel = vr("dmenu")(
             "File Manager | In: " + cwdn,
             fl,
-            hint="Press top left to close. Press Enter to select.",
             preselect=sel,
         )
         del cwdn, remsps
@@ -209,5 +193,13 @@ def filem() -> None:
     chdir(old)
 
 
+vr("wany", wany)
+del wany
+vr("fselm", fselm)
+del fselm
 vr("filem", filem)
 del filem
+vr("filem")()
+vrd("wany")
+vrd("fselm")
+vrd("filem")

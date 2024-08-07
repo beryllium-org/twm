@@ -44,24 +44,15 @@ def ctop(data: str) -> None:
 
 def waitc() -> None:
     t = vr("rt")()
-    while t:
+    k = vr("rk")()
+    while t or k[0] or k[1]:
         t = vr("rt")()
+        k = vr("rk")()
         time.sleep(0.02)
 
 
 def lc() -> None:
     vr("j").nwrite("\r\033[K")
-
-
-def ditem(item: str, sel: bool) -> None:
-    vr("lc")()
-    ldat = " - "
-    if sel:
-        ldat += "[ "
-    ldat += item
-    if sel:
-        ldat += " ]"
-    vr("j").write(ldat)
 
 
 def refr() -> None:
@@ -99,7 +90,7 @@ def clocker() -> None:
         vr("j").move(y=3)
         vr("lc")()
         d = str(d) if d < 10 else "0" + str(d)
-        o = vr("months")[o]
+        o = vr("months")[o - 1]
         vr("j").nwrite(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
         hl = h
         hh = 0
@@ -144,14 +135,16 @@ def clocker() -> None:
                 + vr("bigs")[sh][i]
                 + vr("bigs")[sl][i]
             )
-        vr("refr")()
+        vr("updi")(True)
+    elif vr("lowpow"):
+        time.sleep(0.15)
 
 
 def suspend() -> None:
     vr("d").brightness = 0.005
     vr("force_refr", True)
     vr("lowpow", True)
-    cpu.frequency = 80_000_000
+    cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
 
 
 def resume() -> None:
@@ -159,14 +152,32 @@ def resume() -> None:
     vr("d").brightness = 1
     vr("lowpow", False)
     vr("force_refr", True)
+    vr("updi")(True)
 
 
-def batu() -> None:
-    if time.monotonic() - vr("batc") > 60:
+def bati() -> None:
+    if vr("b").charging_enabled:
+        if vr("b").percentage == 100:
+            vr("b").charging_enabled = False
+    else:
+        if vr("b").percentage < 98:
+            vr("b").charging_enabled = True
+
+
+def updi(force=False) -> None:
+    if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
         vr("j").nwrite(str(vr("b").percentage) + "%" + " " * 3)
         vr("refr")()
         vr("batc", time.monotonic())
+        vr("bati")()
+
+    tmpip = str(be.devices["network"][0].get_ipconf()["ip"])
+    if vr("cached_ip") != tmpip:
+        vr("j").move(y=16, x=23)
+        vr("j").nwrite(" " * 16)
+        vr("j").move(y=16, x=23)
+        vr("j").nwrite(tmpip)
 
 
 def lm() -> bool:
@@ -194,35 +205,47 @@ def lm() -> bool:
     vr("j").nwrite("| " + freeb + " bytes free")
     lp = time.monotonic()
     press = 0
+    vr("waitc")()
     try:
         while True:
-            if (not vr("lowpow")) and (time.monotonic() - lp > 6):
-                if vr("d").brightness > 0.1:
-                    vr("d").brightness -= 0.05
-                    time.sleep(0.05)
-                else:
-                    vr("suspend")()
+            if not vr("lowpow"):
+                if vr("rt")():
+                    lp = time.monotonic()
+                    if vr("d").brightness < 1:
+                        vr("d").brightness = 1
+                if time.monotonic() - lp > 8:
+                    if vr("d").brightness > 0.1:
+                        vr("d").brightness -= 0.05
+                        time.sleep(0.05)
+                    else:
+                        vr("suspend")()
+                gc.collect()
             vr("clocker")()
-            vr("batu")()
-            gc.collect()
+            vr("updi")()
             t = vr("rk")()
             if t[1] and not vr("lowpow"):
+                vr("b").charging_enabled = True
                 return False
             elif t[0]:
                 if vr("lowpow"):
                     vr("resume")()
-                    press = time.monotonic()
+                    if time.monotonic() - press < 1.1:
+                        vr("b").charging_enabled = True
+                        return True
                     lp = time.monotonic()
                 else:
-                    if time.monotonic() - press < 0.8:
+                    if time.monotonic() - press < 0.55:
+                        vr("b").charging_enabled = True
                         return True
                     else:
                         vr("suspend")()
+                press = time.monotonic()
             elif vr("lowpow"):
                 be.api.tasks.run()
     except KeyboardInterrupt:
         if vr("lowpow"):
             vr("resume")()
+        vr("b").charging_enabled = True
         return False
 
 
@@ -286,6 +309,7 @@ vr(
 )
 vr("last_shown", [0, 0, 0, 0, 0, 0])
 vr("force_refr", False)
+vr("cached_ip", "")
 vr("ind", False)
 vr("batc", -70)
 vr("rk", rk)
@@ -302,13 +326,13 @@ vr("waitc", waitc)
 del waitc
 vr("lc", lc)
 del lc
-vr("ditem", ditem)
-del ditem
 vr("refr", refr)
 del refr
 vr("tix", 0)
-vr("batu", batu)
-del batu
+vr("bati", bati)
+del bati
+vr("updi", updi)
+del updi
 vr("clocker", clocker)
 del clocker
 vr("lowpow", False)
