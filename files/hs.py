@@ -1,73 +1,3 @@
-def ri() -> tuple:
-    return vr("p").power_key_was_pressed
-
-
-vr("ri", ri)
-del ri
-
-def tsh() -> None:
-    return vr("ri")()[0]
-
-vr("tsh", tsh)
-del tsh
-
-def tlh() -> None:
-    return vr("ri")()[1]
-
-vr("tlh", tlh)
-del tlh
-
-def ctop(data: str) -> None:
-    vr("d").clear()
-    vr("d").write(data)
-
-
-vr("ctop", ctop)
-del ctop
-
-
-def waitc() -> None:
-    vr("tmpd", vr("ri")())
-    while vr("tmpd")[0] or vr("tmpd")[1]:
-        vr("tmpd", vr("ri")())
-        time.sleep(0.02)
-
-
-vr("waitc", waitc)
-del waitc
-
-
-def lc() -> None:
-    vr("d").nwrite("\r\033[K")
-
-
-vr("lc", lc)
-del lc
-
-
-def ditem(item: str, sel: bool) -> None:
-    vr("lc")()
-    ldat = " - "
-    if sel:
-        ldat += "[ "
-    ldat += item
-    if sel:
-        ldat += " ]"
-    vr("d").write(ldat)
-
-
-vr("ditem", ditem)
-del ditem
-
-
-def refr() -> None:
-    be.devices["DISPLAY"][0].refresh()
-
-
-vr("refr", refr)
-del refr
-
-
 def dmenu(title: str, data: list, hint=None, preselect=0) -> int:
     vr("waitc")()
     vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
@@ -112,10 +42,6 @@ def dmenu(title: str, data: list, hint=None, preselect=0) -> int:
             return -1
 
 
-vr("dmenu", dmenu)
-del dmenu
-
-
 def appm() -> None:
     apps_lst = be.api.fs.listdir("/usr/share/applications")
     apps_k = ["Main menu"]
@@ -133,9 +59,6 @@ def appm() -> None:
             pass  # not yet implemented
             # be.based.command.fpexec("/usr/share/applications/")
 
-
-vr("appm", appm)
-del appm
 
 def hs() -> None:
     while not vr("quit_twm"):
@@ -158,38 +81,21 @@ def hs() -> None:
             be.api.subscript("/bin/twm/unload_settings.py")
 
 
-vr("hs", hs)
-del hs
-
-
-def lkb() -> None:
-    be.api.subscript("/bin/twm/load_kb.py")
-
-
-vr("lkb", lkb)
-del lkb
-
-
-def ukb() -> None:
-    be.api.subscript("/bin/twm/unload_kb.py")
-
-
-vr("ukb", ukb)
-del ukb
-
-vr("quit_twm", False)
-
 def vmain() -> None:
     while not vr("quit_twm"):
-        be.api.subscript("/bin/twm/load_lock.py")
         if vr("lm")():
-            be.api.subscript("/bin/twm/unload_lock.py")
             vr("hs")()
         else:
             break
 
 
+vr("dmenu", dmenu)
+del dmenu
+vr("appm", appm)
+del appm
+vr("quit_twm", False)
+vr("hs", hs)
+del hs
 vr("main", vmain)
 del vmain
-
 vrp("ok")
