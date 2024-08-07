@@ -287,7 +287,7 @@ vr(
 vr("last_shown", [0, 0, 0, 0, 0, 0])
 vr("force_refr", False)
 vr("ind", False)
-vr("batc", 0)
+vr("batc", -70)
 vr("rk", rk)
 del rk
 vr("rt", rt)
