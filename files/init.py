@@ -148,7 +148,7 @@ def clocker() -> None:
 
 
 def suspend() -> None:
-    vr("d").brightness = 0.02
+    vr("d").brightness = 0.005
     vr("force_refr", True)
     vr("lowpow", True)
     cpu.frequency = 80_000_000
