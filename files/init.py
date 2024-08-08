@@ -165,7 +165,7 @@ def resume() -> None:
 
 def bati() -> None:
     if vr("b").charging_enabled:
-        if vr("b").percentage == 100:
+        if vr("b").status == "charged":
             vr("b").charging_enabled = False
     else:
         if vr("b").percentage < 98:
@@ -173,10 +173,25 @@ def bati() -> None:
 
 
 def updi(force=False) -> None:
+    need_refr = False
+    tst = vr("b").status
+    if tst != "discharging":
+        if vr("chm") != tst:
+            vr("chm", tst)
+            vr("j").move(y=11)
+            vr("lc")()
+            vr("j").move(y=11, x=(vr("c").size[0] // 2) - (len(tst) // 2))
+            vr("j").nwrite(tst)
+            force = True
+    elif vr("chm"):
+        vr("j").move(y=11)
+        vr("lc")()
+        force = True
+
     if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
         vr("j").nwrite(str(vr("b").percentage) + "%" + " " * 3)
-        vr("refr")()
+        need_refr = True
         vr("batc", time.monotonic())
         vr("bati")()
 
@@ -186,6 +201,10 @@ def updi(force=False) -> None:
         vr("j").nwrite(" " * 16)
         vr("j").move(y=16, x=23)
         vr("j").nwrite(tmpip)
+        need_refr = True
+
+    if need_refr:
+        vr("refr")()
 
 
 def lm() -> bool:
@@ -336,6 +355,7 @@ vr(
 vr("last_shown", [0, 0, 0, 0, 0, 0])
 vr("force_refr", False)
 vr("cached_ip", "")
+vr("chm", None)
 vr("ind", False)
 vr("batc", -70)
 vr("rk", rk)
