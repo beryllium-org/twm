@@ -152,12 +152,18 @@ def suspend() -> None:
     vr("d").brightness = 0.005
     vr("force_refr", True)
     vr("lowpow", True)
+    vr("p")._bldo2_voltage_setpoint = 0
+    vr("p")._aldo4_voltage_setpoint = 0
     cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
 
 
 def resume() -> None:
     cpu.frequency = 240_000_000
     vr("d").brightness = 1
+    vr("p")._bldo2_voltage_setpoint = 3300
+    vr("p")._aldo4_voltage_setpoint = 3300
+    if not vr("p")._aldo2_voltage_setpoint:
+        vr("p")._aldo2_voltage_setpoint = 3300
     vr("lowpow", False)
     vr("force_refr", True)
     vr("updi")(True)
@@ -258,9 +264,12 @@ def lm() -> bool:
                             vr("d").brightness -= 0.001
                         else:
                             vr("d").brightness = 0
+                            vr("p")._aldo2_voltage_setpoint = 0
                     time.sleep(0.2)
                 elif vr("moved")() or vr("rt")():
                     vr("d").brightness = 0.005
+                    if not vr("p")._aldo2_voltage_setpoint:
+                        vr("p")._aldo2_voltage_setpoint = 3300
                     lm = time.monotonic()
                 else:
                     time.sleep(0.3)

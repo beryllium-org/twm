@@ -146,6 +146,7 @@ def hs() -> None:
             vr("j").nwrite("Rebooting.. ")
             vr("refr")()
             be.based.run("reboot")
+            vr("quit_twm", True)
         else:
             vr("j").clear()
             vr("j").nwrite("Shutting down.. ")

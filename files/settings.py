@@ -22,10 +22,13 @@ def setm() -> None:
                 be.devices["network"][0].start()
         elif sel == 2:
             be.based.run("reload")
+            vr("quit_twm", True)
         elif sel == 3:
             be.based.run("devmode -q")
+            vr("quit_twm", True)
         else:
             be.based.run("devmode -q -p")
+            vr("quit_twm", True)
 
 
 vr("setm", setm)
