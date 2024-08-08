@@ -2,7 +2,6 @@ file 99-twm.lja /boot/boot.d/99-twm.lja
 folder /bin/twm
 folder /usr/share/applications
 file twm.lja /bin/twm.lja
-file hs.py /bin/twm/hs.py
 file init.py /bin/twm/init.py
 file fm.py /bin/twm/fm.py
 file ala.py /bin/twm/ala.py

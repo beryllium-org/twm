@@ -8,6 +8,15 @@ vr("d", be.devices["DISPLAY"][0])
 vr("b", be.devices["bat"][0])
 vr("a", be.devices["BMA423"][0])
 vr("d").auto_refresh = False
+vr("quit_twm", False)
+vr("last_shown", [0, 0, 0, 0, 0, 0])
+vr("force_refr", False)
+vr("cached_ip", "")
+vr("chm", None)
+vr("ind", False)
+vr("batc", -70)
+vr("lowpow", False)
+
 
 vr("j").trigger_dict = {
     "ctrlC": -1,
@@ -213,7 +222,9 @@ def updi(force=False) -> None:
         vr("refr")()
 
 
-def lm() -> bool:
+def lm(start_locked: bool = False) -> None:
+    if start_locked:
+        vr("d").brightness = 0
     vr("j").clear()
     vr("ctop")(
         "T-Watch Manager (T. W. M.)" + " " * 9 + "v1.0" + (vr("c").size[0] * "-")
@@ -259,7 +270,7 @@ def lm() -> bool:
                 if vr("d").brightness:
                     if vr("moved")():
                         lm = time.monotonic()
-                    elif time.monotonic() - lm > 180:
+                    elif time.monotonic() - lm > 30:
                         if vr("d").brightness > 0.001:
                             vr("d").brightness -= 0.001
                         else:
@@ -278,18 +289,20 @@ def lm() -> bool:
             t = vr("rk")()
             if t[1] and not vr("lowpow"):
                 vr("b").charging_enabled = True
-                return False
-            elif t[0]:
+                vr("quit_twm", True)
+                return
+            elif t[0] or start_locked:
                 if vr("lowpow"):
                     vr("resume")()
                     if time.monotonic() - press < 1.1:
                         vr("b").charging_enabled = True
-                        return True
+                        return
                     lp = time.monotonic()
                 else:
+                    start_locked = False
                     if time.monotonic() - press < 0.55:
                         vr("b").charging_enabled = True
-                        return True
+                        return
                     else:
                         vr("suspend")()
                         lm = time.monotonic()
@@ -300,7 +313,8 @@ def lm() -> bool:
         if vr("lowpow"):
             vr("resume")()
         vr("b").charging_enabled = True
-        return False
+        vr("quit_twm", True)
+        return
 
 
 vr(
@@ -361,12 +375,180 @@ vr(
         "'-----------'",
     ],
 )
-vr("last_shown", [0, 0, 0, 0, 0, 0])
-vr("force_refr", False)
-vr("cached_ip", "")
-vr("chm", None)
-vr("ind", False)
-vr("batc", -70)
+
+
+def ditem(item: str, sel: bool) -> None:
+    vr("lc")()
+    ldat = " - "
+    if sel:
+        ldat += "[ "
+    ldat += item
+    if sel:
+        ldat += " ]"
+    vr("j").write(ldat)
+
+
+def dmenu(title: str, data: list, preselect=0) -> int:
+    retry = True
+    while retry and not vr("quit_twm"):
+        retry = False
+        vr("waitc")()
+        vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
+        sel = preselect
+        scl = 0
+        while sel - scl > vr("c").size[1] - 6:
+            scl += 1
+        vr("j").move(y=vr("c").size[1] - 2)
+        sz = vr("c").size[0] // 4
+        vr("j").nwrite(
+            " /"
+            + "-" * (sz - 2)
+            + "v"
+            + ("-" * (sz) + "v") * 2
+            + "-" * (sz - 1)
+            + "."
+            + "/"
+            + " " * (sz - 1)
+            + "|"
+            + (sz * " " + "|") * 2
+            + (sz - 1) * " "
+            + "/"
+            + "'"
+            + "-" * (sz - 1)
+            + "^"
+            + ("-" * (sz) + "^") * 2
+            + "-" * (sz - 2)
+            + "/"
+        )
+        vr("j").move(y=vr("c").size[1] - 1, x=5)
+        vr("j").nwrite("UP")
+        vr("j").move(y=vr("c").size[1] - 1, x=13)
+        vr("j").nwrite("DOWN")
+        vr("j").move(y=vr("c").size[1] - 1, x=23)
+        vr("j").nwrite("ABORT")
+        vr("j").move(y=vr("c").size[1] - 1, x=34)
+        vr("j").nwrite("OK")
+        try:
+            while not vr("quit_twm"):
+                vr("j").move(y=3)
+                bigl = 7
+                big = len(data) > vr("c").size[1] - bigl
+                if not big:
+                    vr("j").write()
+                    for i in range(len(data)):
+                        vr("ditem")(data[i], sel == i)
+                else:
+                    vr("lc")()
+                    vr("j").write("   [...]" if scl else None)
+                    for i in range(vr("c").size[1] - bigl):
+                        vr("ditem")(data[i + scl], sel - scl == i)
+                    vr("lc")()
+                    vr("j").write(
+                        "   [...]"
+                        if (scl != len(data) - vr("c").size[1] + bigl)
+                        else None
+                    )
+                vr("refr")()
+                t = vr("rt")()
+                k = vr("rk")()
+                if k[1]:
+                    vr("quit_twm", True)
+                elif k[0]:
+                    vr("lm")()
+                    retry = True
+                    break
+                elif t and t[0]["y"] > 190:
+                    if t[0]["x"] < 61:  # up
+                        if sel:
+                            sel -= 1
+                            if scl and (sel - scl < 0):
+                                scl -= 1
+                    elif t[0]["x"] < 121:  # down
+                        if sel < len(data) - 1:
+                            sel += 1
+                            if big and (sel - scl > vr("c").size[1] - bigl - 1):
+                                scl += 1
+                    elif t[0]["x"] < 181:  # cancel
+                        break
+                    else:  # confirm
+                        return sel
+                    time.sleep(0.05)
+        except KeyboardInterrupt:
+            vr("quit_twm", True)
+    return -1
+
+
+def appm() -> None:
+    apps_lst = be.api.fs.listdir("/usr/share/applications")
+    apps_k = ["Main menu"]
+    for i in range(len(apps_lst)):
+        apps_k.append(apps_lst[i][0])
+    while True:
+        sel = vr("dmenu")(
+            "Apps",
+            apps_k,
+        )
+        if sel in [-1, 0]:
+            break
+        else:
+            pass  # not yet implemented
+            # be.based.command.fpexec("/usr/share/applications/")
+
+
+def hs() -> None:
+    vr("lm")(True)
+    while not vr("quit_twm"):
+        sel = vr("dmenu")(
+            "Home",
+            [
+                "Apps",
+                "Files",
+                "Alarms",
+                "Stopwatch",
+                "Timer",
+                "Settings",
+                "Quit",
+                "Restart",
+                "Shutdown",
+            ],
+        )
+        if sel == -1:
+            if not vr("quit_twm"):
+                vr("lm")()
+        elif sel == 0:
+            vr("appm")()
+        elif sel == 1:
+            be.api.subscript("/bin/twm/fm.py")
+        elif sel == 2:
+            be.api.subscript("/bin/twm/ala.py")
+        elif sel == 3:
+            be.api.subscript("/bin/twm/stopw.py")
+        elif sel == 4:
+            be.api.subscript("/bin/twm/timer.py")
+        elif sel == 5:
+            be.api.subscript("/bin/twm/settings.py")
+        elif sel == 6:
+            vr("quit_twm", True)
+        elif sel == 7:
+            vr("j").clear()
+            vr("j").nwrite("Rebooting.. ")
+            vr("refr")()
+            be.based.run("reboot")
+            vr("quit_twm", True)
+        elif sel == 8:
+            vr("j").clear()
+            vr("j").nwrite("Shutting down.. ")
+            vr("refr")()
+            be.based.run("shutdown")
+        else:
+            raise RuntimeError("Unknown value!")
+
+
+def vmain() -> None:
+    while not vr("quit_twm"):
+        vr("hs")()
+
+
 vr("rk", rk)
 del rk
 vr("rt", rt)
@@ -391,12 +573,22 @@ vr("updi", updi)
 del updi
 vr("clocker", clocker)
 del clocker
-vr("lowpow", False)
 vr("suspend", suspend)
 del suspend
 vr("resume", resume)
 del resume
 vr("lm", lm)
 del lm
+vr("ditem", ditem)
+del ditem
+vr("dmenu", dmenu)
+del dmenu
+vr("appm", appm)
+del appm
+vr("quit_twm", False)
+vr("hs", hs)
+del hs
+vr("main", vmain)
+del vmain
 
 vrp("ok")

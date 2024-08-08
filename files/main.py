@@ -3,8 +3,7 @@ vr("opts", be.api.xarg())
 if (not be.api.console_connected()) or "f" in vr("opts")["o"]:
     vr("ok", 0)
     be.api.subscript("/bin/twm/init.py")
-    be.api.subscript("/bin/twm/hs.py")
-    if vr("ok") == 2:
+    if vr("ok") == 1:
         vrd("ok")
         vr("crashes", 0)
         while vr("crashes") < 3:
