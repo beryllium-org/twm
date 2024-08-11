@@ -16,6 +16,7 @@ vr("chm", None)
 vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
+vr("susbri", 0.004)
 
 
 vr("j").trigger_dict = {
@@ -106,7 +107,7 @@ def clocker() -> None:
     if need_refr:
         vr("j").move(y=3)
         vr("lc")()
-        d = str(d) if d < 10 else "0" + str(d)
+        d = str(d) if d > 9 else "0" + str(d)
         o = vr("months")[o - 1]
         vr("j").nwrite(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
         hl = h
@@ -158,7 +159,7 @@ def clocker() -> None:
 
 
 def suspend() -> None:
-    vr("d").brightness = 0.005
+    vr("d").brightness = vr("susbri")
     vr("force_refr", True)
     vr("lowpow", True)
     vr("p")._bldo2_voltage_setpoint = 0
@@ -276,9 +277,9 @@ def lm(start_locked: bool = False) -> None:
                         else:
                             vr("d").brightness = 0
                             vr("p")._aldo2_voltage_setpoint = 0
-                    time.sleep(0.2)
+                    time.sleep(0.15)
                 elif vr("moved")() or vr("rt")():
-                    vr("d").brightness = 0.005
+                    vr("d").brightness = vr("susbri")
                     if not vr("p")._aldo2_voltage_setpoint:
                         vr("p")._aldo2_voltage_setpoint = 3300
                     lm = time.monotonic()
