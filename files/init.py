@@ -17,6 +17,7 @@ vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
 vr("susbri", 0.004)
+vr("chmaxt", None)
 
 
 vr("j").trigger_dict = {
@@ -182,10 +183,14 @@ def resume() -> None:
 def bati() -> None:
     if vr("b").charging_enabled:
         if vr("b").status == "charged":
-            vr("b").charging_enabled = False
+            if vr("chmaxt") is None:
+                vr("chmaxt", None)
+            elif time.monotonic()-vr("chmaxt") > 600:
+                vr("b").charging_enabled = False
     else:
         if vr("b").percentage < 98:
             vr("b").charging_enabled = True
+            vr("chmaxt", None)
 
 
 def updi(force=False) -> None:
@@ -225,7 +230,7 @@ def updi(force=False) -> None:
 
 def lm(start_locked: bool = False) -> None:
     if start_locked:
-        vr("d").brightness = 0
+        vr("d").brightness = vr("susbri")
     vr("j").clear()
     vr("ctop")(
         "T-Watch Manager (T. W. M.)" + " " * 9 + "v1.0" + (vr("c").size[0] * "-")
@@ -289,20 +294,17 @@ def lm(start_locked: bool = False) -> None:
             vr("updi")()
             t = vr("rk")()
             if t[1] and not vr("lowpow"):
-                vr("b").charging_enabled = True
                 vr("quit_twm", True)
                 return
             elif t[0] or start_locked:
                 if vr("lowpow"):
                     vr("resume")()
                     if time.monotonic() - press < 1.1:
-                        vr("b").charging_enabled = True
                         return
                     lp = time.monotonic()
                 else:
                     start_locked = False
                     if time.monotonic() - press < 0.55:
-                        vr("b").charging_enabled = True
                         return
                     else:
                         vr("suspend")()
@@ -313,7 +315,6 @@ def lm(start_locked: bool = False) -> None:
     except KeyboardInterrupt:
         if vr("lowpow"):
             vr("resume")()
-        vr("b").charging_enabled = True
         vr("quit_twm", True)
         return
 
@@ -392,6 +393,7 @@ def ditem(item: str, sel: bool) -> None:
 def dmenu(title: str, data: list, preselect=0) -> int:
     retry = True
     while retry and not vr("quit_twm"):
+        timeout = time.monotonic()
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
@@ -458,22 +460,34 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     vr("lm")()
                     retry = True
                     break
-                elif t and t[0]["y"] > 190:
-                    if t[0]["x"] < 61:  # up
-                        if sel:
-                            sel -= 1
-                            if scl and (sel - scl < 0):
-                                scl -= 1
-                    elif t[0]["x"] < 121:  # down
-                        if sel < len(data) - 1:
-                            sel += 1
-                            if big and (sel - scl > vr("c").size[1] - bigl - 1):
-                                scl += 1
-                    elif t[0]["x"] < 181:  # cancel
+                elif t:
+                    timeout = time.monotonic()
+                    if vr("d").brightness < 1.0:
+                        vr("d").brightness = 1.0
+                    if t[0]["y"] > 190:
+                        if t[0]["x"] < 61:  # up
+                            if sel:
+                                sel -= 1
+                                if scl and (sel - scl < 0):
+                                    scl -= 1
+                        elif t[0]["x"] < 121:  # down
+                            if sel < len(data) - 1:
+                                sel += 1
+                                if big and (sel - scl > vr("c").size[1] - bigl - 1):
+                                    scl += 1
+                        elif t[0]["x"] < 181:  # cancel
+                            break
+                        else:  # confirm
+                            return sel
+                        time.sleep(0.05)
+                elif time.monotonic()-timeout > 10:
+                    if vr("d").brightness > 0.1:
+                        vr("d").brightness -= 0.1
+                        time.sleep(0.12)
+                    else:
+                        vr("lm")(True)
+                        retry = True
                         break
-                    else:  # confirm
-                        return sel
-                    time.sleep(0.05)
         except KeyboardInterrupt:
             vr("quit_twm", True)
     return -1
@@ -536,11 +550,15 @@ def hs() -> None:
             vr("refr")()
             be.based.run("reboot")
             vr("quit_twm", True)
+            vr("j").nwrite("Bye!")
+            vr("refr")()
         elif sel == 8:
             vr("j").clear()
             vr("j").nwrite("Shutting down.. ")
             vr("refr")()
             be.based.run("shutdown")
+            vr("j").nwrite("Bye!")
+            vr("refr")()
         else:
             raise RuntimeError("Unknown value!")
 
