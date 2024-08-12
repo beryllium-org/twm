@@ -10,6 +10,7 @@ if (not be.api.console_connected()) or "f" in vr("opts")["o"]:
             try:
                 vr("main")()
                 vr("b").charging_enabled = True
+                vr("p")._aldo4_voltage_setpoint = 3300
                 break
             except Exception as err:
                 vrp("crashes")

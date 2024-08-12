@@ -12,12 +12,13 @@ vr("quit_twm", False)
 vr("last_shown", [0, 0, 0, 0, 0, 0])
 vr("force_refr", False)
 vr("cached_ip", "")
-vr("chm", None)
 vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
-vr("susbri", 0.004)
+vr("mainbri", 1)
+vr("susbri", 0.002)
 vr("chmaxt", None)
+vr("p")._aldo4_voltage_setpoint = 0
 
 
 vr("j").trigger_dict = {
@@ -164,15 +165,13 @@ def suspend() -> None:
     vr("force_refr", True)
     vr("lowpow", True)
     vr("p")._bldo2_voltage_setpoint = 0
-    vr("p")._aldo4_voltage_setpoint = 0
     cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
 
 
 def resume() -> None:
     cpu.frequency = 240_000_000
-    vr("d").brightness = 1
+    vr("d").brightness = vr("mainbri")
     vr("p")._bldo2_voltage_setpoint = 3300
-    vr("p")._aldo4_voltage_setpoint = 3300
     if not vr("p")._aldo2_voltage_setpoint:
         vr("p")._aldo2_voltage_setpoint = 3300
     vr("lowpow", False)
@@ -185,7 +184,7 @@ def bati() -> None:
         if vr("b").status == "charged":
             if vr("chmaxt") is None:
                 vr("chmaxt", None)
-            elif time.monotonic()-vr("chmaxt") > 600:
+            elif time.monotonic() - vr("chmaxt") > 600:
                 vr("b").charging_enabled = False
     else:
         if vr("b").percentage < 98:
@@ -229,6 +228,7 @@ def updi(force=False) -> None:
 
 
 def lm(start_locked: bool = False) -> None:
+    vr("chm", None)
     if start_locked:
         vr("d").brightness = vr("susbri")
     vr("j").clear()
@@ -262,8 +262,8 @@ def lm(start_locked: bool = False) -> None:
             if not vr("lowpow"):
                 if vr("rt")():
                     lp = time.monotonic()
-                    if vr("d").brightness < 1:
-                        vr("d").brightness = 1
+                    if vr("d").brightness < vr("mainbri"):
+                        vr("d").brightness = vr("mainbri")
                 if time.monotonic() - lp > 8:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05
@@ -282,16 +282,20 @@ def lm(start_locked: bool = False) -> None:
                         else:
                             vr("d").brightness = 0
                             vr("p")._aldo2_voltage_setpoint = 0
-                    time.sleep(0.15)
+                    time.sleep(0.2)
                 elif vr("moved")() or vr("rt")():
                     vr("d").brightness = vr("susbri")
                     if not vr("p")._aldo2_voltage_setpoint:
                         vr("p")._aldo2_voltage_setpoint = 3300
                     lm = time.monotonic()
+                    time.sleep(0.2)
                 else:
-                    time.sleep(0.3)
-            vr("clocker")()
-            vr("updi")()
+                    time.sleep(0.5)
+            if vr("d").brightness:
+                vr("clocker")()
+                vr("updi")()
+            else:
+                vr("bati")()
             t = vr("rk")()
             if t[1] and not vr("lowpow"):
                 vr("quit_twm", True)
@@ -462,8 +466,8 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     break
                 elif t:
                     timeout = time.monotonic()
-                    if vr("d").brightness < 1.0:
-                        vr("d").brightness = 1.0
+                    if vr("d").brightness < vr("mainbri"):
+                        vr("d").brightness = vr("mainbri")
                     if t[0]["y"] > 190:
                         if t[0]["x"] < 61:  # up
                             if sel:
@@ -480,7 +484,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         else:  # confirm
                             return sel
                         time.sleep(0.05)
-                elif time.monotonic()-timeout > 10:
+                elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.1
                         time.sleep(0.12)
