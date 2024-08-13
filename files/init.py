@@ -15,8 +15,8 @@ vr("cached_ip", "")
 vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
-vr("mainbri", 1)
-vr("susbri", 0.002)
+vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
+vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM") + 1) * 0.001)
 vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
 
