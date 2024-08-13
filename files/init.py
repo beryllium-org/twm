@@ -383,6 +383,31 @@ vr(
 )
 
 
+def drawbox() -> None:
+    sz = vr("c").size[0] // 4
+    vr("j").move(y=vr("c").size[1] - 2)
+    vr("j").nwrite(
+        " /"
+        + "-" * (sz - 2)
+        + "v"
+        + ("-" * (sz) + "v") * 2
+        + "-" * (sz - 1)
+        + "."
+        + "/"
+        + " " * (sz - 1)
+        + "|"
+        + (sz * " " + "|") * 2
+        + (sz - 1) * " "
+        + "/"
+        + "'"
+        + "-" * (sz - 1)
+        + "^"
+        + ("-" * (sz) + "^") * 2
+        + "-" * (sz - 2)
+        + "/"
+    )
+
+
 def ditem(item: str, sel: bool) -> None:
     vr("lc")()
     ldat = " - "
@@ -405,28 +430,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
         scl = 0
         while sel - scl > vr("c").size[1] - 6:
             scl += 1
-        vr("j").move(y=vr("c").size[1] - 2)
-        sz = vr("c").size[0] // 4
-        vr("j").nwrite(
-            " /"
-            + "-" * (sz - 2)
-            + "v"
-            + ("-" * (sz) + "v") * 2
-            + "-" * (sz - 1)
-            + "."
-            + "/"
-            + " " * (sz - 1)
-            + "|"
-            + (sz * " " + "|") * 2
-            + (sz - 1) * " "
-            + "/"
-            + "'"
-            + "-" * (sz - 1)
-            + "^"
-            + ("-" * (sz) + "^") * 2
-            + "-" * (sz - 2)
-            + "/"
-        )
+        vr("drawbox")()
         vr("j").move(y=vr("c").size[1] - 1, x=5)
         vr("j").nwrite("UP")
         vr("j").move(y=vr("c").size[1] - 1, x=13)
@@ -468,7 +472,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     timeout = time.monotonic()
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
-                    if t[0]["y"] > 190:
+                    elif t[0]["y"] > 190:
                         if t[0]["x"] < 61:  # up
                             if sel:
                                 sel -= 1
@@ -484,6 +488,95 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         else:  # confirm
                             return sel
                         time.sleep(0.05)
+                elif time.monotonic() - timeout > 10:
+                    if vr("d").brightness > 0.1:
+                        vr("d").brightness -= 0.1
+                        time.sleep(0.12)
+                    else:
+                        vr("lm")(True)
+                        retry = True
+                        break
+        except KeyboardInterrupt:
+            vr("quit_twm", True)
+    return -1
+
+
+def slidemenu(title: str, data: list, preselect=0) -> int:
+    retry = True
+    sel = preselect
+    while retry and not vr("quit_twm"):
+        timeout = time.monotonic()
+        retry = False
+        vr("waitc")()
+        vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
+        vr("drawbox")()
+        oldselp = -1
+        oldsel = -1
+        iteml = len(data)
+        dashes = vr("c").size[0] - 2
+        vr("j").move(y=vr("c").size[1] - 1, x=4)
+        vr("j").nwrite("MINUS")
+        vr("j").move(y=vr("c").size[1] - 1, x=13)
+        vr("j").nwrite("PLUS")
+        vr("j").move(y=vr("c").size[1] - 1, x=23)
+        vr("j").nwrite("ABORT")
+        vr("j").move(y=vr("c").size[1] - 1, x=34)
+        vr("j").nwrite("OK")
+        try:
+            while not vr("quit_twm"):
+                if sel != oldsel:
+                    selp = (sel * dashes) // (iteml - 1)
+                    oldsel = sel
+                    if selp != oldselp:
+                        vr("j").move(y=4)
+                        vr("j").nwrite(" " + ("-" * dashes))
+                        oldselp = selp
+                        vr("j").move(y=3)
+                        vr("lc")()
+                        newp = selp + (2 if selp < dashes else 1)
+                        vr("j").move(y=3, x=newp)
+                        vr("j").nwrite("v")
+                        vr("j").move(y=4, x=newp)
+                        vr("j").nwrite("|")
+                        vr("j").move(y=5)
+                        vr("lc")()
+                        vr("j").move(y=5, x=newp)
+                        vr("j").nwrite("^")
+                    vr("j").move(y=6)
+                    vr("lc")()
+                    vr("j").move(
+                        y=6, x=(vr("c").size[0] // 2 - len(data[sel]) // 2 + 1)
+                    )
+                    vr("j").nwrite(data[sel])
+                    vr("refr")()
+                t = vr("rt")()
+                k = vr("rk")()
+                if k[1]:
+                    vr("quit_twm", True)
+                elif k[0]:
+                    vr("lm")()
+                    retry = True
+                    break
+                elif t:
+                    timeout = time.monotonic()
+                    if vr("d").brightness < vr("mainbri"):
+                        vr("d").brightness = vr("mainbri")
+                    elif t[0]["y"] > 190:
+                        if t[0]["x"] < 61:  # minus
+                            if sel:
+                                sel -= 1
+                        elif t[0]["x"] < 121:  # plus
+                            if sel < len(data) - 1:
+                                sel += 1
+                        elif t[0]["x"] < 181:  # cancel
+                            break
+                        else:  # confirm
+                            return sel
+                        time.sleep(0.1)
+                    else:
+                        x = t[0]["x"]
+                        if x > 5 and x < 235:
+                            sel = ((x - 5) * iteml) // 230
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.1
@@ -602,10 +695,14 @@ vr("resume", resume)
 del resume
 vr("lm", lm)
 del lm
+vr("drawbox", drawbox)
+del drawbox
 vr("ditem", ditem)
 del ditem
 vr("dmenu", dmenu)
 del dmenu
+vr("slidemenu", slidemenu)
+del slidemenu
 vr("appm", appm)
 del appm
 vr("quit_twm", False)
