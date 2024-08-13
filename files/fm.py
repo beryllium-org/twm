@@ -10,7 +10,7 @@ def wany() -> None:
 def fselm(filen) -> None:
     while True:
         sel = vr("dmenu")(
-            "File selected | " + filen[0][:10],
+            "File selected | " + filen[0][:22],
             [
                 "File info",
                 "View as text",
