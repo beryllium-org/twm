@@ -490,7 +490,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         time.sleep(0.05)
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
-                        vr("d").brightness -= 0.1
+                        vr("d").brightness -= 0.05
                         time.sleep(0.12)
                     else:
                         vr("lm")(True)
@@ -579,7 +579,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                             sel = ((x - 5) * iteml) // 230
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
-                        vr("d").brightness -= 0.1
+                        vr("d").brightness -= 0.05
                         time.sleep(0.12)
                     else:
                         vr("lm")(True)
