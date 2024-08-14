@@ -22,11 +22,11 @@ def setm() -> None:
             if be.devices["network"][0].enabled:
                 vr("j").nwrite("Disabling Wi-Fi..")
                 vr("refr")()
-                be.devices["network"][0].stop()
+                be.based.run("rfkill block wlan")
             else:
-                be.devices["network"][0].start()
                 vr("j").nwrite("Enabling Wi-Fi..")
                 vr("refr")()
+                be.based.run("rfkill unblock wlan")
             vr("j").nwrite(" Done!")
             vr("refr")()
             time.sleep(0.4)
