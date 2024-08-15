@@ -7,6 +7,8 @@ vr("t", be.devices["ftouch"][0])
 vr("d", be.devices["DISPLAY"][0])
 vr("b", be.devices["bat"][0])
 vr("a", be.devices["BMA423"][0])
+vr("r", be.devices["rtc"][0])
+vr("r").alarm_status = False
 vr("d").auto_refresh = False
 vr("quit_twm", False)
 vr("last_shown", [0, 0, 0, 0, 0, 0])
@@ -111,7 +113,19 @@ def clocker() -> None:
         vr("lc")()
         d = str(d) if d > 9 else "0" + str(d)
         o = vr("months")[o - 1]
-        vr("j").nwrite(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
+        vr("j").write(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
+        vr("lc")()
+        if vr("r").alarm_interrupt:
+            vr("j").nwrite("Alarm: ")
+            ahr = vr("r").alarm[0].tm_hour
+            amin = vr("r").alarm[0].tm_min
+            if vr("r").alarm[1] != "daily":
+                vr("j").nwrite(vr("days")[vr("r").alarm[0].tm_wday] + " ")
+            vr("j").nwrite(
+                (("0" + str(ahr)) if ahr < 10 else str(ahr))
+                + ":"
+                + (("0" + str(amin)) if amin < 10 else str(amin))
+            )
         hl = h
         hh = 0
         if hl > 9:
@@ -192,6 +206,59 @@ def bati() -> None:
             vr("chmaxt", None)
 
 
+def ring_alarm() -> None:
+    if vr("lowpow"):
+        vr("resume")()
+    vr("d").brightness = vr("mainbri")
+    ahr = vr("r").alarm[0].tm_hour
+    amin = vr("r").alarm[0].tm_min
+    astr = "ALARM -!- alarm - ALARM -!- alarm -- "
+    shf = 0
+    sht = time.monotonic()
+    nt = False
+    vr("ctop")(
+        "ALARM - "
+        + (("0" + str(ahr)) if ahr < 10 else str(ahr))
+        + ":"
+        + (("0" + str(amin)) if amin < 10 else str(amin))
+        + "\n"
+        + (vr("c").size[0] * "-")
+    )
+    vr("j").move(y=7, x=19)
+    vr("j").nwrite("/\\")
+    vr("j").move(y=8, x=18)
+    vr("j").nwrite("/  \\")
+    vr("j").move(y=9, x=17)
+    vr("j").nwrite("/ || \\")
+    vr("j").move(y=10, x=16)
+    vr("j").nwrite("/  ||  \\")
+    vr("j").move(y=11, x=15)
+    vr("j").nwrite("/   ..   \\")
+    vr("j").move(y=12, x=14)
+    vr("j").nwrite("/__________\\")
+    vr("refr")()
+    k = vr("rk")()
+    while not k[0]:
+        k = vr("rk")()
+        vr("j").move(y=4, x=2)
+        vr("j").nwrite(vr("str_rotate")(astr, shf))
+        vr("j").move(y=18, x=2)
+        vr("j").nwrite(vr("str_rotate")(astr, shf))
+        vr("j").move(y=15)
+        vr("lc")()
+        if nt < 0:
+            vr("j").nwrite((" " * 6) + "Press Power button to exit")
+        nt += 1
+        if nt > 6:
+            nt = -6
+        shf += 1
+        sht = time.monotonic()
+        if shf > len(astr):
+            shf = 0
+        vr("refr")()
+    vr("r").alarm_status = False
+
+
 def updi(force=False) -> None:
     need_refr = False
     tst = vr("b").status
@@ -227,100 +294,138 @@ def updi(force=False) -> None:
         vr("refr")()
 
 
+def str_rotate(string: str, n: int) -> str:
+    return string[n:] + string[:n]
+
+
+def swipe_unlock() -> bool:
+    vr("j").clear()
+    ct = vr("rt")()
+    ll = 1
+    rot = 0
+    lstr = "--^^^^-^-Swipe-up-to-unlock-^^--^^^^-"
+    checkt = time.monotonic()
+    while ct:
+        vr("lc")()
+        y = ct[0]["y"]
+        ll = int((y * (vr("c").size[1]) / 240) + 1)
+        vr("j").move(y=ll, x=2)
+        vr("j").nwrite(vr("str_rotate")(lstr, rot))
+        if time.monotonic() - checkt > 0.12:
+            rot += 1
+            if rot > len(lstr):
+                rot = 0
+            checkt = time.monotonic()
+        vr("refr")()
+        ct = vr("rt")()
+    return ll > 7
+
+
 def lm(start_locked: bool = False) -> None:
     vr("chm", None)
     if start_locked:
         vr("d").brightness = vr("susbri")
-    vr("j").clear()
-    vr("ctop")(
-        "T-Watch Manager (T. W. M.)" + " " * 9 + "v1.0" + (vr("c").size[0] * "-")
-    )
-    vr("j").move(y=13)
-    vr("j").nwrite(vr("c").size[0] * "-")
-    vr("j").nwrite(" " * 2 + "\n  ".join(vr("logo")))
-    vr("j").move(y=15, x=19)
-    vr("j").nwrite("| IP Address:")
-    vr("j").move(y=16, x=19)
-    vr("j").nwrite("| - " + str(be.devices["network"][0].get_ipconf()["ip"]))
-    vr("j").move(y=17, x=19)
-    vr("j").nwrite("| Battery: ")
-    vr("j").move(y=18, x=19)
-    gc.collect()
-    gc.collect()
-    freeb = gc.mem_free()
-    if freeb > 1024:
-        freeb = str(freeb // 1024) + "k"
-    else:
-        freeb = str(freeb)
-    vr("j").nwrite("| " + freeb + " bytes free")
-    lp = time.monotonic()
-    lm = time.monotonic()
-    press = 0
-    vr("waitc")()
-    try:
-        while True:
-            if not vr("lowpow"):
-                if vr("rt")():
-                    lp = time.monotonic()
-                    if vr("d").brightness < vr("mainbri"):
-                        vr("d").brightness = vr("mainbri")
-                if time.monotonic() - lp > 8:
-                    if vr("d").brightness > 0.1:
-                        vr("d").brightness -= 0.05
-                        time.sleep(0.05)
-                    else:
-                        vr("suspend")()
-                        lm = time.monotonic()
-                gc.collect()
-            else:
-                if vr("d").brightness:
-                    if vr("moved")():
-                        lm = time.monotonic()
-                    elif time.monotonic() - lm > 30:
-                        if vr("d").brightness > 0.001:
-                            vr("d").brightness -= 0.001
+    retry = True
+    while retry:
+        retry = False
+        vr("j").clear()
+        vr("ctop")(
+            "T-Watch Manager (T. W. M.)" + " " * 9 + "v1.0" + (vr("c").size[0] * "-")
+        )
+        vr("j").move(y=13)
+        vr("j").nwrite(vr("c").size[0] * "-")
+        vr("j").nwrite(" " * 2 + "\n  ".join(vr("logo")))
+        vr("j").move(y=15, x=19)
+        vr("j").nwrite("| IP Address:")
+        vr("j").move(y=16, x=19)
+        vr("j").nwrite("| - " + str(be.devices["network"][0].get_ipconf()["ip"]))
+        vr("j").move(y=17, x=19)
+        vr("j").nwrite("| Battery: ")
+        vr("j").move(y=18, x=19)
+        gc.collect()
+        gc.collect()
+        freeb = gc.mem_free()
+        if freeb > 1024:
+            freeb = str(freeb // 1024) + "k"
+        else:
+            freeb = str(freeb)
+        vr("j").nwrite("| " + freeb + " bytes free")
+        lp = time.monotonic()
+        lm = time.monotonic()
+        press = 0
+        vr("waitc")()
+        try:
+            while True:
+                if vr("r").alarm_status:
+                    vr("ring_alarm")()
+                    retry = True
+                    break
+                if not vr("lowpow"):
+                    tou = vr("rt")()
+                    if tou:
+                        lp = time.monotonic()
+                        if vr("d").brightness < vr("mainbri"):
+                            vr("d").brightness = vr("mainbri")
+                        elif tou[0]["y"] > 160:
+                            retry = vr("swipe_unlock")()
+                            break
+                    if time.monotonic() - lp > 8:
+                        if vr("d").brightness > 0.1:
+                            vr("d").brightness -= 0.05
+                            time.sleep(0.05)
                         else:
-                            vr("d").brightness = 0
-                            vr("p")._aldo2_voltage_setpoint = 0
-                    time.sleep(0.2)
-                elif vr("moved")() or vr("rt")():
-                    vr("d").brightness = vr("susbri")
-                    if not vr("p")._aldo2_voltage_setpoint:
-                        vr("p")._aldo2_voltage_setpoint = 3300
-                    lm = time.monotonic()
-                    time.sleep(0.2)
+                            vr("suspend")()
+                            lm = time.monotonic()
+                    gc.collect()
                 else:
-                    time.sleep(0.5)
-            if vr("d").brightness:
-                vr("clocker")()
-                vr("updi")()
-            else:
-                vr("bati")()
-            t = vr("rk")()
-            if t[1] and not vr("lowpow"):
-                vr("quit_twm", True)
-                return
-            elif t[0] or start_locked:
-                if vr("lowpow"):
-                    vr("resume")()
-                    if time.monotonic() - press < 1.1:
-                        return
-                    lp = time.monotonic()
-                else:
-                    start_locked = False
-                    if time.monotonic() - press < 0.55:
-                        return
-                    else:
-                        vr("suspend")()
+                    if vr("d").brightness:
+                        if vr("moved")():
+                            lm = time.monotonic()
+                        elif time.monotonic() - lm > 30:
+                            if vr("d").brightness > 0.001:
+                                vr("d").brightness -= 0.001
+                            else:
+                                vr("d").brightness = 0
+                                vr("p")._aldo2_voltage_setpoint = 0
+                        time.sleep(0.2)
+                    elif vr("moved")() or vr("rt")():
+                        vr("d").brightness = vr("susbri")
+                        if not vr("p")._aldo2_voltage_setpoint:
+                            vr("p")._aldo2_voltage_setpoint = 3300
                         lm = time.monotonic()
-                press = time.monotonic()
-            elif vr("lowpow"):
-                be.api.tasks.run()
-    except KeyboardInterrupt:
-        if vr("lowpow"):
-            vr("resume")()
-        vr("quit_twm", True)
-        return
+                        time.sleep(0.2)
+                    else:
+                        time.sleep(0.5)
+                if vr("d").brightness:
+                    vr("clocker")()
+                    vr("updi")()
+                else:
+                    vr("bati")()
+                t = vr("rk")()
+                if t[1] and not vr("lowpow"):
+                    vr("quit_twm", True)
+                    return
+                elif t[0] or start_locked:
+                    if vr("lowpow"):
+                        vr("resume")()
+                        if time.monotonic() - press < 1.1:
+                            return
+                        lp = time.monotonic()
+                    else:
+                        start_locked = False
+                        if time.monotonic() - press < 0.55:
+                            return
+                        else:
+                            vr("suspend")()
+                            lm = time.monotonic()
+                    press = time.monotonic()
+                elif vr("lowpow"):
+                    be.api.tasks.run()
+        except KeyboardInterrupt:
+            if vr("lowpow"):
+                vr("resume")()
+            vr("quit_twm", True)
+            return
 
 
 vr(
@@ -642,13 +747,39 @@ def hs() -> None:
         elif sel == 6:
             vr("quit_twm", True)
         elif sel == 7:
-            vr("j").clear()
-            vr("j").nwrite("Rebooting.. ")
-            vr("refr")()
-            be.based.run("reboot")
-            vr("quit_twm", True)
-            vr("j").nwrite("Bye!")
-            vr("refr")()
+            sel = vr("dmenu")(
+                "Reboot",
+                [
+                    "Reboot",
+                    "Reboot safemode",
+                    "Reboot to TinyUF2",
+                    "Reboot to bootloader",
+                ],
+            )
+            if sel == 0:
+                vr("j").clear()
+                vr("j").nwrite("Rebooting.. ")
+                vr("refr")()
+                be.based.run("reboot")
+                vr("quit_twm", True)
+            elif sel == 1:
+                vr("j").clear()
+                vr("j").nwrite("Rebooting to safemode.. ")
+                vr("refr")()
+                be.based.run("reboot safemode")
+                vr("quit_twm", True)
+            elif sel == 2:
+                vr("j").clear()
+                vr("j").nwrite("Rebooting to TinyUF2.. ")
+                vr("refr")()
+                be.based.run("reboot uf2")
+                vr("quit_twm", True)
+            elif sel == 3:
+                vr("j").clear()
+                vr("j").nwrite("Rebooting to bootloader.. ")
+                vr("refr")()
+                be.based.run("reboot bootloader")
+                vr("quit_twm", True)
         elif sel == 8:
             vr("j").clear()
             vr("j").nwrite("Shutting down.. ")
@@ -662,6 +793,7 @@ def hs() -> None:
 
 def vmain() -> None:
     while not vr("quit_twm"):
+        vr("ring_alarm")()
         vr("hs")()
 
 
@@ -685,6 +817,8 @@ del refr
 vr("tix", 0)
 vr("bati", bati)
 del bati
+vr("ring_alarm", ring_alarm)
+del ring_alarm
 vr("updi", updi)
 del updi
 vr("clocker", clocker)
@@ -693,6 +827,10 @@ vr("suspend", suspend)
 del suspend
 vr("resume", resume)
 del resume
+vr("str_rotate", str_rotate)
+del str_rotate
+vr("swipe_unlock", swipe_unlock)
+del swipe_unlock
 vr("lm", lm)
 del lm
 vr("drawbox", drawbox)
