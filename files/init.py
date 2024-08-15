@@ -238,24 +238,27 @@ def ring_alarm() -> None:
     vr("j").nwrite("/__________\\")
     vr("refr")()
     k = vr("rk")()
-    while not k[0]:
-        k = vr("rk")()
-        vr("j").move(y=4, x=2)
-        vr("j").nwrite(vr("str_rotate")(astr, shf))
-        vr("j").move(y=18, x=2)
-        vr("j").nwrite(vr("str_rotate")(astr, shf))
-        vr("j").move(y=15)
-        vr("lc")()
-        if nt < 0:
-            vr("j").nwrite((" " * 6) + "Press Power button to exit")
-        nt += 1
-        if nt > 6:
-            nt = -6
-        shf += 1
-        sht = time.monotonic()
-        if shf > len(astr):
-            shf = 0
-        vr("refr")()
+    try:
+        while not k[0]:
+            k = vr("rk")()
+            vr("j").move(y=4, x=2)
+            vr("j").nwrite(vr("str_rotate")(astr, shf))
+            vr("j").move(y=18, x=2)
+            vr("j").nwrite(vr("str_rotate")(astr, shf))
+            vr("j").move(y=15)
+            vr("lc")()
+            if nt < 0:
+                vr("j").nwrite((" " * 6) + "Press Power button to exit")
+            nt += 1
+            if nt > 6:
+                nt = -6
+            shf += 1
+            sht = time.monotonic()
+            if shf > len(astr):
+                shf = 0
+            vr("refr")()
+    except KeyboardInterrupt:
+        vr("quit_twm", True)
     vr("r").alarm_status = False
 
 
@@ -326,7 +329,7 @@ def lm(start_locked: bool = False) -> None:
     if start_locked:
         vr("d").brightness = vr("susbri")
     retry = True
-    while retry:
+    while retry and not vr("quit_twm"):
         retry = False
         vr("j").clear()
         vr("ctop")(
@@ -444,6 +447,7 @@ vr(
         ["   ", " _ ", "   "],  # - | 10
         [" ", " ", " "],  #   | 11
         [" ", ".", "."],  # : | 12
+        [" ", " ", "."],  # . | 13
     ],
 )
 vr(
@@ -536,13 +540,14 @@ def dmenu(title: str, data: list, preselect=0) -> int:
         while sel - scl > vr("c").size[1] - 6:
             scl += 1
         vr("drawbox")()
-        vr("j").move(y=vr("c").size[1] - 1, x=5)
+        ysize = vr("c").size[1] - 1
+        vr("j").move(y=ysize, x=5)
         vr("j").nwrite("UP")
-        vr("j").move(y=vr("c").size[1] - 1, x=13)
+        vr("j").move(y=ysize, x=13)
         vr("j").nwrite("DOWN")
-        vr("j").move(y=vr("c").size[1] - 1, x=23)
+        vr("j").move(y=ysize, x=23)
         vr("j").nwrite("ABORT")
-        vr("j").move(y=vr("c").size[1] - 1, x=34)
+        vr("j").move(y=ysize, x=34)
         vr("j").nwrite("OK")
         try:
             while not vr("quit_twm"):
@@ -556,13 +561,11 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                 else:
                     vr("lc")()
                     vr("j").write("   [...]" if scl else None)
-                    for i in range(vr("c").size[1] - bigl):
+                    for i in range(ysize + 1 - bigl):
                         vr("ditem")(data[i + scl], sel - scl == i)
                     vr("lc")()
                     vr("j").write(
-                        "   [...]"
-                        if (scl != len(data) - vr("c").size[1] + bigl)
-                        else None
+                        "   [...]" if (scl != len(data) - ysize + 1 + bigl) else None
                     )
                 vr("refr")()
                 t = vr("rt")()
@@ -578,17 +581,18 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
                     elif t[0]["y"] > 190:
-                        if t[0]["x"] < 61:  # up
+                        x = t[0]["x"]
+                        if x < 61:  # up
                             if sel:
                                 sel -= 1
                                 if scl and (sel - scl < 0):
                                     scl -= 1
-                        elif t[0]["x"] < 121:  # down
+                        elif x < 121:  # down
                             if sel < len(data) - 1:
                                 sel += 1
-                                if big and (sel - scl > vr("c").size[1] - bigl - 1):
+                                if big and (sel - scl > ysize - bigl):
                                     scl += 1
-                        elif t[0]["x"] < 181:  # cancel
+                        elif x < 181:  # cancel
                             break
                         else:  # confirm
                             return sel
@@ -793,7 +797,7 @@ def hs() -> None:
 
 def vmain() -> None:
     while not vr("quit_twm"):
-        vr("ring_alarm")()
+        # vr("ring_alarm")()
         vr("hs")()
 
 
@@ -843,7 +847,6 @@ vr("slidemenu", slidemenu)
 del slidemenu
 vr("appm", appm)
 del appm
-vr("quit_twm", False)
 vr("hs", hs)
 del hs
 vr("main", vmain)
