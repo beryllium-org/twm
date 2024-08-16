@@ -21,6 +21,8 @@ vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
 vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM") + 1) * 0.001)
 vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
+vr("timer", None)
+vr("timer_rem", None)
 
 
 vr("j").trigger_dict = {
@@ -193,6 +195,16 @@ def resume() -> None:
     vr("updi")(True)
 
 
+def check_timers() -> bool:
+    if vr("r").alarm_status:
+        vr("ring_alarm")()
+        return True
+    if vr("timer") is not None and vr("timer") < time.monotonic():
+        vr("ring_timer")()
+        return True
+    return False
+
+
 def bati() -> None:
     if vr("b").charging_enabled:
         if vr("b").status == "charged":
@@ -260,6 +272,40 @@ def ring_alarm() -> None:
     except KeyboardInterrupt:
         vr("quit_twm", True)
     vr("r").alarm_status = False
+
+
+def ring_timer() -> None:
+    if vr("lowpow"):
+        vr("resume")()
+    vr("d").brightness = vr("mainbri")
+    astr = " TIME IS UP -!- TIMER RAN OUT --!!-- "
+    nt = False
+    vr("ctop")("TIMER\n" + (vr("c").size[0] * "-"))
+    vr("j").move(y=5, x=14)
+    vr("j").nwrite("TIME IS UP!")
+    vr("refr")()
+    k = vr("rk")()
+    shf = 0
+    try:
+        while not k[0]:
+            k = vr("rk")()
+            vr("j").move(y=18, x=2)
+            vr("j").nwrite(vr("str_rotate")(astr, shf))
+            vr("j").move(y=15)
+            vr("lc")()
+            if nt < 0:
+                vr("j").nwrite((" " * 6) + "Press Power button to exit")
+            nt += 1
+            if nt > 6:
+                nt = -6
+            shf += 1
+            sht = time.monotonic()
+            if shf > len(astr):
+                shf = 0
+            vr("refr")()
+    except KeyboardInterrupt:
+        vr("quit_twm", True)
+    vr("timer", None)
 
 
 def updi(force=False) -> None:
@@ -359,8 +405,7 @@ def lm(start_locked: bool = False) -> None:
         vr("waitc")()
         try:
             while True:
-                if vr("r").alarm_status:
-                    vr("ring_alarm")()
+                if vr("check_timers")():
                     retry = True
                     break
                 if not vr("lowpow"):
@@ -371,6 +416,7 @@ def lm(start_locked: bool = False) -> None:
                             vr("d").brightness = vr("mainbri")
                         elif tou[0]["y"] > 160:
                             retry = vr("swipe_unlock")()
+                            vr("force_refr", True)
                             break
                     if time.monotonic() - lp > 8:
                         if vr("d").brightness > 0.1:
@@ -551,6 +597,9 @@ def dmenu(title: str, data: list, preselect=0) -> int:
         vr("j").nwrite("OK")
         try:
             while not vr("quit_twm"):
+                if vr("check_timers")():
+                    retry = True
+                    break
                 vr("j").move(y=3)
                 bigl = 7
                 big = len(data) > vr("c").size[1] - bigl
@@ -633,6 +682,9 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
         vr("j").nwrite("OK")
         try:
             while not vr("quit_twm"):
+                if vr("check_timers")():
+                    retry = True
+                    break
                 if sel != oldsel:
                     selp = (sel * dashes) // (iteml - 1)
                     oldsel = sel
@@ -798,58 +850,65 @@ def hs() -> None:
 def vmain() -> None:
     while not vr("quit_twm"):
         # vr("ring_alarm")()
+        # vr("ring_timer")()
         vr("hs")()
 
 
 vr("rk", rk)
-del rk
 vr("rt", rt)
-del rt
 vr("ra", ra)
 vr("last_accel", ra())
-del ra
 vr("moved", moved)
-del moved
 vr("ctop", ctop)
-del ctop
 vr("waitc", waitc)
-del waitc
 vr("lc", lc)
-del lc
 vr("refr", refr)
-del refr
 vr("tix", 0)
 vr("bati", bati)
-del bati
 vr("ring_alarm", ring_alarm)
-del ring_alarm
+vr("ring_timer", ring_timer)
+vr("check_timers", check_timers)
 vr("updi", updi)
-del updi
 vr("clocker", clocker)
-del clocker
 vr("suspend", suspend)
-del suspend
 vr("resume", resume)
-del resume
 vr("str_rotate", str_rotate)
-del str_rotate
 vr("swipe_unlock", swipe_unlock)
-del swipe_unlock
 vr("lm", lm)
-del lm
 vr("drawbox", drawbox)
-del drawbox
 vr("ditem", ditem)
-del ditem
 vr("dmenu", dmenu)
-del dmenu
 vr("slidemenu", slidemenu)
-del slidemenu
 vr("appm", appm)
-del appm
 vr("hs", hs)
-del hs
 vr("main", vmain)
-del vmain
+del (
+    rk,
+    rt,
+    ra,
+    moved,
+    ctop,
+    waitc,
+    lc,
+    refr,
+    bati,
+    ring_alarm,
+    ring_timer,
+    check_timers,
+    updi,
+    clocker,
+    suspend,
+    resume,
+    str_rotate,
+    swipe_unlock,
+    lm,
+    drawbox,
+    ditem,
+    dmenu,
+    slidemenu,
+    appm,
+    hs,
+    vmain,
+)
 
 vrp("ok")

@@ -125,6 +125,9 @@ def stopw() -> None:
         timeout = time.monotonic()
         try:
             while True:
+                if vr("check_timers")():
+                    retry = True
+                    break
                 t = vr("rt")()
                 k = vr("rk")()
                 lt = time.monotonic()
@@ -206,10 +209,22 @@ def stopw() -> None:
                                 rt = lt - rt
                                 vr("j").move(y=ysize, x=24)
                                 vr("j").nwrite("EXIT")
-                if k[0]:
-                    vr("lm")(True)
-                    retry = True
-                    break
+                elif k[0]:
+                    timeout = lt
+                    if vr("d").brightness < vr("mainbri"):
+                        vr("d").brightness = vr("mainbri")
+                    st = 2 if st != 2 else 0
+                    if st == 2:
+                        if rt is None:
+                            rt = lt
+                        else:
+                            rt = lt - rt
+                        vr("j").move(y=ysize, x=24)
+                        vr("j").nwrite(" " * 4)
+                    else:
+                        rt = lt - rt
+                        vr("j").move(y=ysize, x=24)
+                        vr("j").nwrite("EXIT")
                 elif lt - timeout > 10:
                     if vr("d").brightness > 0.05:
                         vr("d").brightness -= 0.01
