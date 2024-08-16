@@ -8,6 +8,7 @@ vr("d", be.devices["DISPLAY"][0])
 vr("b", be.devices["bat"][0])
 vr("a", be.devices["BMA423"][0])
 vr("r", be.devices["rtc"][0])
+vr("v", be.devices["vib"][0])
 vr("r").alarm_status = False
 vr("d").auto_refresh = False
 vr("quit_twm", False)
@@ -23,6 +24,8 @@ vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
 vr("timer", None)
 vr("timer_rem", None)
+vr("al_seq", [vr("v").effect(16)] + ([vr("v").effect(0)] * 7))
+vr("bop_seq", [vr("v").effect(8)] + ([vr("v").effect(0)] * 7))
 
 
 vr("j").trigger_dict = {
@@ -228,6 +231,7 @@ def ring_alarm() -> None:
     shf = 0
     sht = time.monotonic()
     nt = False
+    rt = -1
     vr("ctop")(
         "ALARM - "
         + (("0" + str(ahr)) if ahr < 10 else str(ahr))
@@ -252,6 +256,10 @@ def ring_alarm() -> None:
     k = vr("rk")()
     try:
         while not k[0]:
+            lt = time.monotonic()
+            if lt - rt > 2:
+                rt = lt
+                vr("vibr")(vr("al_seq"))
             k = vr("rk")()
             vr("j").move(y=4, x=2)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
@@ -265,7 +273,7 @@ def ring_alarm() -> None:
             if nt > 6:
                 nt = -6
             shf += 1
-            sht = time.monotonic()
+            sht = lt
             if shf > len(astr):
                 shf = 0
             vr("refr")()
@@ -286,8 +294,13 @@ def ring_timer() -> None:
     vr("refr")()
     k = vr("rk")()
     shf = 0
+    rt = -1
     try:
         while not k[0]:
+            lt = time.monotonic()
+            if lt - rt > 3:
+                rt = lt
+                vr("vibr")(vr("al_seq"))
             k = vr("rk")()
             vr("j").move(y=18, x=2)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
@@ -299,7 +312,7 @@ def ring_timer() -> None:
             if nt > 6:
                 nt = -6
             shf += 1
-            sht = time.monotonic()
+            sht = lt
             if shf > len(astr):
                 shf = 0
             vr("refr")()
@@ -368,6 +381,16 @@ def swipe_unlock() -> bool:
         vr("refr")()
         ct = vr("rt")()
     return ll > 7
+
+
+def vibr(pattern: list) -> None:
+    for i in range(8):
+        vr("v").sequence[i] = pattern[i]
+    vr("v").play()
+
+
+def stv() -> None:
+    vr("v").stop()
 
 
 def lm(start_locked: bool = False) -> None:
@@ -875,6 +898,8 @@ vr("resume", resume)
 vr("str_rotate", str_rotate)
 vr("swipe_unlock", swipe_unlock)
 vr("lm", lm)
+vr("vibr", vibr)
+vr("stv", stv)
 vr("drawbox", drawbox)
 vr("ditem", ditem)
 vr("dmenu", dmenu)
@@ -902,6 +927,8 @@ del (
     str_rotate,
     swipe_unlock,
     lm,
+    vibr,
+    stv,
     drawbox,
     ditem,
     dmenu,
