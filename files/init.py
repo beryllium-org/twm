@@ -435,6 +435,7 @@ def updi(force=False) -> None:
     elif vr("chm"):
         vr("j").move(y=11)
         vr("lc")()
+        vr("chm", None)
         force = True
 
     if force or time.monotonic() - vr("batc") > 60:
