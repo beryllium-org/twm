@@ -421,11 +421,14 @@ def ring_timer() -> None:
     vr("player").stop()
 
 
-def updi(force=False) -> None:
+def updi(force=False) -> bool:
     need_refr = False
+    res = False
     tst = vr("b").status
     if tst != "discharging":
         if vr("chm") != tst:
+            if tst != "charged" and vr("chm") is not None:
+                res = True
             vr("chm", tst)
             vr("j").move(y=11)
             vr("lc")()
@@ -435,7 +438,9 @@ def updi(force=False) -> None:
     elif vr("chm"):
         vr("j").move(y=11)
         vr("lc")()
-        vr("chm", None)
+        if vr("chm") is not None:
+            res = True
+        vr("chm", "")
         force = True
 
     if force or time.monotonic() - vr("batc") > 60:
@@ -455,6 +460,12 @@ def updi(force=False) -> None:
 
     if need_refr:
         vr("refr")()
+
+    if res:
+        if vr("lowpow"):
+            vr("resume")()
+        vr("vibr")(vr("confirm_bop_seq"))
+    return res
 
 
 def str_rotate(string: str, n: int) -> str:
@@ -575,9 +586,9 @@ def lm(start_locked: bool = False) -> None:
                         time.sleep(0.5)
                 if vr("d").brightness:
                     vr("clocker")()
-                    vr("updi")()
-                else:
-                    vr("bati")()
+                if vr("updi")():
+                    lm = time.monotonic()
+                    lp = time.monotonic()
                 t = vr("rk")()
                 if t[1] and not vr("lowpow"):
                     vr("quit_twm", True)
