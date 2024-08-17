@@ -600,13 +600,13 @@ def lm(start_locked: bool = False) -> None:
                             return
                         lp = time.monotonic()
                     else:
-                        start_locked = False
                         if time.monotonic() - press < 0.55:
                             return
                         else:
                             vr("suspend")()
                             lm = time.monotonic()
                     press = time.monotonic()
+                    start_locked = False
                 elif vr("lowpow"):
                     be.api.tasks.run()
         except KeyboardInterrupt:
