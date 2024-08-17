@@ -8,6 +8,8 @@ def setm() -> None:
                 "Wi-Fi [" + ("ON" if be.devices["network"][0].enabled else "OFF") + "]",
                 "Brightness",
                 "Idle brightness",
+                "Vibration [" + ("ON" if vr("vibrate") else "OFF") + "]",
+                "Set the time",
                 "Reload",
                 "Enable devmode (once)",
                 "Enable devmode (permenantly)",
@@ -46,7 +48,11 @@ def setm() -> None:
                     cptoml.put("brightness", sel + 1, subtable="TWM")
                     remount("/", True)
                 except RuntimeError:
-                    term.write("Could not write brightness value to storage!")
+                    vr("j").clear()
+                    vr("j").nwrite("Could not write to storage!")
+                    vr("refr")()
+                    vr("vibr")(vr("err_seq"))
+                    time.sleep(3)
         elif sel == 3:
             plist = []
             start = 0.001
@@ -64,11 +70,33 @@ def setm() -> None:
                     cptoml.put("suspend_brightness", sel, subtable="TWM")
                     remount("/", True)
                 except RuntimeError:
-                    term.write("Could not write brightness value to storage!")
+                    vr("j").clear()
+                    vr("j").nwrite("Could not write to storage!")
+                    vr("refr")()
+                    vr("vibr")(vr("err_seq"))
+                    time.sleep(3)
         elif sel == 4:
+            vr("vibrate", not vr("vibrate"))
+            try:
+                remount("/", False)
+                cptoml.put("vibration", vr("vibrate"), subtable="TWM")
+                remount("/", True)
+            except RuntimeError:
+                vr("j").clear()
+                vr("j").nwrite("Could not write to storage!")
+                vr("refr")()
+                vr("vibr")(vr("err_seq"))
+                time.sleep(3)
+        elif sel == 5:
+            vr("j").clear()
+            vr("j").nwrite("Not yet implemented!")
+            vr("refr")()
+            vr("vibr")(vr("err_seq"))
+            time.sleep(1.8)
+        elif sel == 6:
             be.based.run("reload")
             vr("quit_twm", True)
-        elif sel == 5:
+        elif sel == 7:
             vr("j").clear()
             vr("j").nwrite("Enabling.. ")
             vr("refr")()

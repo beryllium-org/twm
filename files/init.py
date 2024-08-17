@@ -24,9 +24,14 @@ vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
 vr("timer", None)
 vr("timer_rem", None)
-vr("al_seq", [vr("v").effect(16)] + ([vr("v").effect(0)] * 7))
-vr("bop_seq", [vr("v").effect(8)] + ([vr("v").effect(0)] * 7))
-
+vr("al_seq", [vr("v").effect(16)])
+vr("bop_seq", [vr("v").effect(3)])
+vr("bop_bad_seq", [vr("v").effect(1)])
+vr("clk_seq", [vr("v").effect(26)])
+vr("confirm_bop_seq", [vr("v").effect(13)])
+vr("pwr_seq", [vr("v").effect(20)])
+vr("err_seq", [vr("v").effect(47), vr("v").pause(0.3), vr("v").effect(47)])
+vr("vibrate", cptoml.fetch("vibration", subtable="TWM") == True)
 
 vr("j").trigger_dict = {
     "ctrlC": -1,
@@ -384,9 +389,12 @@ def swipe_unlock() -> bool:
 
 
 def vibr(pattern: list) -> None:
-    for i in range(8):
-        vr("v").sequence[i] = pattern[i]
-    vr("v").play()
+    if vr("vibrate"):
+        for i in range(len(pattern)):
+            vr("v").sequence[i] = pattern[i]
+        for i in range(len(pattern), 8):
+            vr("v").sequence[i] = vr("v").effect(0)
+        vr("v").play()
 
 
 def stv() -> None:
@@ -480,6 +488,7 @@ def lm(start_locked: bool = False) -> None:
                 elif t[0] or start_locked:
                     if vr("lowpow"):
                         vr("resume")()
+                        vr("vibr")(vr("pwr_seq"))
                         if time.monotonic() - press < 1.1:
                             return
                         lp = time.monotonic()
@@ -618,6 +627,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
         vr("j").nwrite("ABORT")
         vr("j").move(y=ysize, x=34)
         vr("j").nwrite("OK")
+        db = 0
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
@@ -640,11 +650,15 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         "   [...]" if (scl != len(data) - ysize + 1 + bigl) else None
                     )
                 vr("refr")()
+                if db:
+                    vr("vibr")(vr("bop_seq") if db == 1 else vr("bop_bad_seq"))
+                    db = 0
                 t = vr("rt")()
                 k = vr("rk")()
                 if k[1]:
                     vr("quit_twm", True)
                 elif k[0]:
+                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")()
                     retry = True
                     break
@@ -653,20 +667,27 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
                     elif t[0]["y"] > 190:
+                        db = 1
                         x = t[0]["x"]
                         if x < 61:  # up
                             if sel:
                                 sel -= 1
                                 if scl and (sel - scl < 0):
                                     scl -= 1
+                            else:
+                                db += 1
                         elif x < 121:  # down
                             if sel < len(data) - 1:
                                 sel += 1
                                 if big and (sel - scl > ysize - bigl):
                                     scl += 1
+                            else:
+                                db += 1
                         elif x < 181:  # cancel
+                            vr("vibr")(vr("confirm_bop_seq"))
                             break
                         else:  # confirm
+                            vr("vibr")(vr("confirm_bop_seq"))
                             return sel
                         time.sleep(0.05)
                 elif time.monotonic() - timeout > 10:
@@ -703,6 +724,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
         vr("j").nwrite("ABORT")
         vr("j").move(y=vr("c").size[1] - 1, x=34)
         vr("j").nwrite("OK")
+        db = 0
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
@@ -733,11 +755,20 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                     )
                     vr("j").nwrite(data[sel])
                     vr("refr")()
+                if db:
+                    seq = vr("bop_seq")
+                    if db == 2:
+                        seq = vr("bop_bad_seq")
+                    elif db == 3:
+                        seq = vr("clk_seq")
+                    vr("vibr")(seq)
+                    db = 0
                 t = vr("rt")()
                 k = vr("rk")()
                 if k[1]:
                     vr("quit_twm", True)
                 elif k[0]:
+                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")()
                     retry = True
                     break
@@ -746,21 +777,30 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
                     elif t[0]["y"] > 190:
+                        db = 1
                         if t[0]["x"] < 61:  # minus
                             if sel:
                                 sel -= 1
+                            else:
+                                db += 1
                         elif t[0]["x"] < 121:  # plus
                             if sel < len(data) - 1:
                                 sel += 1
+                            else:
+                                db += 1
                         elif t[0]["x"] < 181:  # cancel
+                            vr("vibr")(vr("confirm_bop_seq"))
                             break
                         else:  # confirm
+                            vr("vibr")(vr("confirm_bop_seq"))
                             return sel
                         time.sleep(0.1)
                     else:
                         x = t[0]["x"]
                         if x > 5 and x < 235:
                             sel = ((x - 5) * iteml) // 230
+                            if sel != oldsel:
+                                db = 3
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05

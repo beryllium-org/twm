@@ -233,6 +233,7 @@ def ftimer() -> None:
                         x = t[0]["x"]
                         lk = lt
                         if x < 121:  # conigure
+                            vr("vibr")(vr("bop_seq"))
                             sel = vr("slidemenu")(
                                 "Configure timer",
                                 slist,
@@ -244,14 +245,17 @@ def ftimer() -> None:
                             retry = True
                             break
                         elif x < 181:  # exit
+                            vr("vibr")(vr("confirm_bop_seq"))
                             return
                         else:  # toggle
                             if vr("timer_rem") is not None:
+                                vr("vibr")(vr("bop_seq"))
                                 if vr("timer") is None:
                                     vr("timer", lt + vr("timer_rem"))
                                 else:
                                     vr("timer", None)
                             else:
+                                vr("vibr")(vr("err_seq"))
                                 vr("j").clear()
                                 vr("j").nwrite("No timer configured!")
                                 vr("refr")()
@@ -259,6 +263,7 @@ def ftimer() -> None:
                                 retry = True
                                 break
                 if k[0]:
+                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")(True)
                     retry = True
                     break

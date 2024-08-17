@@ -154,12 +154,12 @@ def stopw() -> None:
                                 vr("j").move(y=9)
                                 lapc += 1
                                 laps.append(dt)
-                                for i in range(lapc - 1, max(1, lapc - 5) - 1, -1):
+                                for i in range(lapc, max(1, lapc - 4) - 1, -1):
                                     vr("lc")()
                                     vr("j").nwrite("Lap #" + str(i) + ": ")
                                     days, hours, minutes, seconds, milliseconds = vr(
                                         "split_time"
-                                    )(laps[i])
+                                    )(laps[i - 1])
                                     if days:
                                         vr("j").nwrite(str(days) + ":")
                                     if hours or days:
@@ -191,10 +191,18 @@ def stopw() -> None:
                                         + "."
                                     )
                                     vr("j").write(str(milliseconds))
+                                vr("vibr")(vr("bop_seq"))
                         elif x < 121:  # reset
                             rt = lt if st == 2 else None
+                            for i in range(9, 14):
+                                vr("j").move(y=i)
+                                vr("lc")()
+                            laps = []
+                            lapc = 0
+                            vr("vibr")(vr("bop_seq"))
                         elif x < 181:  # exit
                             if st != 2:
+                                vr("vibr")(vr("confirm_bop_seq"))
                                 break
                         else:  # toggle
                             st = 2 if st != 2 else 0
@@ -209,6 +217,7 @@ def stopw() -> None:
                                 rt = lt - rt
                                 vr("j").move(y=ysize, x=24)
                                 vr("j").nwrite("EXIT")
+                            vr("vibr")(vr("bop_seq"))
                 elif k[0]:
                     timeout = lt
                     if vr("d").brightness < vr("mainbri"):
