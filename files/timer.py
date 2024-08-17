@@ -258,6 +258,7 @@ def ftimer() -> None:
                                 vr("vibr")(vr("err_seq"))
                                 vr("j").clear()
                                 vr("j").nwrite("No timer configured!")
+                                vr("player").play(vr("s_no"))
                                 vr("refr")()
                                 time.sleep(3)
                                 retry = True

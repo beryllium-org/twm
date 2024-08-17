@@ -11,6 +11,58 @@ vr("r", be.devices["rtc"][0])
 vr("v", be.devices["vib"][0])
 vr("r").alarm_status = False
 vr("d").auto_refresh = False
+vr("i2s", be.devices["i2s"][0])
+
+
+class player:
+    def __init__(self, dev, cl):
+        self._dev = dev
+        self._aud = cl
+        self._f = None
+        self._b = None
+
+    def play(self, filen=None) -> None:
+        if vr("sounds"):
+            if filen is None:
+                if self._b is not None:
+                    if self._dev.playing:
+                        self._dev.stop()
+                    self._dev.play(self._b)
+                else:
+                    raise ValueError("No file provided!")
+            else:
+                if self._b is not None:
+                    self._b.deinit()
+                    self._b = None
+                    self._f.close()
+                    self._f = None
+                res = be.api.fs.resolve(filen)
+                if res is not None:
+                    try:
+                        self._f = open(res, "rb")
+                        self._b = self._aud(self._f)
+                        self._dev.play(self._b)
+                    except:
+                        raise OSError("Could not open media file!")
+
+    def stop(self) -> None:
+        self._dev.stop()
+
+    def deinit(self) -> None:
+        self._dev.stop()
+        self._b.deinit()
+        self._f.close()
+        del self._aud, self._dev
+
+    @property
+    def playing(self) -> bool:
+        return self._dev.playing
+
+
+from audiocore import WaveFile
+
+vr("player", player(vr("i2s"), WaveFile))
+del WaveFile, player
 vr("quit_twm", False)
 vr("last_shown", [0, 0, 0, 0, 0, 0])
 vr("force_refr", False)
@@ -31,6 +83,20 @@ vr("clk_seq", [vr("v").effect(26)])
 vr("confirm_bop_seq", [vr("v").effect(13)])
 vr("err_seq", [vr("v").effect(47), vr("v").pause(0.3), vr("v").effect(47)])
 vr("vibrate", cptoml.fetch("vibration", subtable="TWM") == True)
+vr("sounds", cptoml.fetch("sounds", subtable="TWM") == True)
+
+vr("s_al", cptoml.fetch("alarm_sound", subtable="TWM"))
+if not isinstance(vr("s_al"), str):
+    vr("s_al", "/usr/share/sounds/twm_alarm.wav")
+
+vr("s_tm", cptoml.fetch("timer_sound", subtable="TWM"))
+if not isinstance(vr("s_tm"), str):
+    vr("s_tm", "/usr/share/sounds/twm_timer.wav")
+
+vr("s_no", cptoml.fetch("notification_sound", subtable="TWM"))
+if not isinstance(vr("s_no"), str):
+    vr("s_no", "/usr/share/sounds/twm_notification.wav")
+
 
 vr("j").trigger_dict = {
     "ctrlC": -1,
@@ -188,6 +254,8 @@ def suspend() -> None:
     vr("force_refr", True)
     vr("lowpow", True)
     vr("p")._bldo2_voltage_setpoint = 0
+    vr("p")._dldo1_voltage_setpoint = 0
+    vr("p")._dldo1_voltage_setpoint = 0
     cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
 
 
@@ -195,8 +263,8 @@ def resume() -> None:
     cpu.frequency = 240_000_000
     vr("d").brightness = vr("mainbri")
     vr("p")._bldo2_voltage_setpoint = 3300
-    if not vr("p")._aldo2_voltage_setpoint:
-        vr("p")._aldo2_voltage_setpoint = 3300
+    vr("p")._aldo2_voltage_setpoint = 3300
+    vr("p")._dldo1_voltage_setpoint = 3300
     vr("lowpow", False)
     vr("force_refr", True)
     vr("updi")(True)
@@ -228,6 +296,8 @@ def bati() -> None:
 def ring_alarm() -> None:
     if vr("lowpow"):
         vr("resume")()
+    if not vr("player").playing:
+        vr("player").play(vr("s_al"))
     vr("d").brightness = vr("mainbri")
     ahr = vr("r").alarm[0].tm_hour
     amin = vr("r").alarm[0].tm_min
@@ -260,6 +330,8 @@ def ring_alarm() -> None:
     k = vr("rk")()
     try:
         while not k[0]:
+            if not vr("player").playing:
+                vr("player").play(vr("s_al"))
             lt = time.monotonic()
             if lt - rt > 2:
                 rt = lt
@@ -284,11 +356,14 @@ def ring_alarm() -> None:
     except KeyboardInterrupt:
         vr("quit_twm", True)
     vr("r").alarm_status = False
+    vr("player").stop()
 
 
 def ring_timer() -> None:
     if vr("lowpow"):
         vr("resume")()
+    if not vr("player").playing:
+        vr("player").play(vr("s_tm"))
     vr("d").brightness = vr("mainbri")
     astr = " TIME IS UP -!- TIMER RAN OUT --!!-- "
     nt = False
@@ -301,6 +376,8 @@ def ring_timer() -> None:
     rt = -1
     try:
         while not k[0]:
+            if not vr("player").playing:
+                vr("player").play(vr("s_tm"))
             lt = time.monotonic()
             if lt - rt > 3:
                 rt = lt
@@ -323,6 +400,7 @@ def ring_timer() -> None:
     except KeyboardInterrupt:
         vr("quit_twm", True)
     vr("timer", None)
+    vr("player").stop()
 
 
 def updi(force=False) -> None:
@@ -389,6 +467,7 @@ def swipe_unlock() -> bool:
 
 def vibr(pattern: list) -> None:
     if vr("vibrate"):
+        vr("stv")()
         for i in range(len(pattern)):
             vr("v").sequence[i] = pattern[i]
         for i in range(len(pattern), 8):
@@ -908,9 +987,10 @@ def hs() -> None:
 
 def vmain() -> None:
     while not vr("quit_twm"):
-        # vr("ring_alarm")()
-        # vr("ring_timer")()
         vr("hs")()
+    vr("b").charging_enabled = True
+    vr("p")._aldo4_voltage_setpoint = 3300
+    vr("player").deinit()
 
 
 vr("rk", rk)

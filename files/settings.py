@@ -9,6 +9,7 @@ def setm() -> None:
                 "Brightness",
                 "Idle brightness",
                 "Vibration [" + ("ON" if vr("vibrate") else "OFF") + "]",
+                "Sounds [" + ("ON" if vr("sounds") else "OFF") + "]",
                 "Set the time",
                 "Reload",
                 "Enable devmode (once)",
@@ -48,10 +49,11 @@ def setm() -> None:
                     cptoml.put("brightness", sel + 1, subtable="TWM")
                     remount("/", True)
                 except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
                     vr("j").clear()
                     vr("j").nwrite("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
                     vr("refr")()
-                    vr("vibr")(vr("err_seq"))
                     time.sleep(3)
         elif sel == 3:
             plist = []
@@ -70,10 +72,11 @@ def setm() -> None:
                     cptoml.put("suspend_brightness", sel, subtable="TWM")
                     remount("/", True)
                 except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
                     vr("j").clear()
                     vr("j").nwrite("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
                     vr("refr")()
-                    vr("vibr")(vr("err_seq"))
                     time.sleep(3)
         elif sel == 4:
             vr("vibrate", not vr("vibrate"))
@@ -82,21 +85,36 @@ def setm() -> None:
                 cptoml.put("vibration", vr("vibrate"), subtable="TWM")
                 remount("/", True)
             except RuntimeError:
+                vr("vibr")(vr("err_seq"))
                 vr("j").clear()
                 vr("j").nwrite("Could not write to storage!")
+                vr("player").play(vr("s_no"))
                 vr("refr")()
-                vr("vibr")(vr("err_seq"))
                 time.sleep(3)
         elif sel == 5:
+            vr("sounds", not vr("sounds"))
+            try:
+                remount("/", False)
+                cptoml.put("sounds", vr("sounds"), subtable="TWM")
+                remount("/", True)
+            except RuntimeError:
+                vr("vibr")(vr("err_seq"))
+                vr("j").clear()
+                vr("j").nwrite("Could not write to storage!")
+                vr("player").play(vr("s_no"))
+                vr("refr")()
+                time.sleep(3)
+        elif sel == 6:
+            vr("vibr")(vr("err_seq"))
             vr("j").clear()
             vr("j").nwrite("Not yet implemented!")
+            vr("player").play(vr("s_no"))
             vr("refr")()
-            vr("vibr")(vr("err_seq"))
             time.sleep(1.8)
-        elif sel == 6:
+        elif sel == 7:
             be.based.run("reload")
             vr("quit_twm", True)
-        elif sel == 7:
+        elif sel == 8:
             vr("j").clear()
             vr("j").nwrite("Enabling.. ")
             vr("refr")()
