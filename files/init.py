@@ -20,17 +20,19 @@ class player:
         self._aud = cl
         self._f = None
         self._b = None
+        self._fnc = "    "
 
     def play(self, filen=None) -> None:
         if vr("sounds"):
-            if filen is None:
+            if filen is None or filen == self._fnc:
                 if self._b is not None:
                     if self._dev.playing:
-                        self._dev.stop()
+                        self.stop()
                     self._dev.play(self._b)
                 else:
                     raise ValueError("No file provided!")
             else:
+                self.stop()
                 if self._b is not None:
                     self._b.deinit()
                     self._b = None
@@ -41,6 +43,7 @@ class player:
                     try:
                         self._f = open(res, "rb")
                         self._b = self._aud(self._f)
+                        self._fnc = filen
                         self._dev.play(self._b)
                     except:
                         raise OSError("Could not open media file!")
@@ -50,8 +53,12 @@ class player:
 
     def deinit(self) -> None:
         self._dev.stop()
-        self._b.deinit()
-        self._f.close()
+        if self._b is not None:
+            self._b.deinit()
+            self._b = None
+        if self._f is not None:
+            self._f.close()
+            self._f = None
         del self._aud, self._dev
 
     @property
@@ -268,6 +275,17 @@ def resume() -> None:
     vr("lowpow", False)
     vr("force_refr", True)
     vr("updi")(True)
+
+
+def fselect(frompath: str = "/home/board"):
+    vr("selector", frompath)
+    vr("selected", False)
+    be.api.subscript("/bin/twm/fm.py")
+    res = None
+    if vr("selected") == True:
+        res = vr("selector")
+    vr("selector", None)
+    return res
 
 
 def check_timers() -> bool:
@@ -929,6 +947,7 @@ def hs() -> None:
         elif sel == 0:
             vr("appm")()
         elif sel == 1:
+            vr("selector", None)
             be.api.subscript("/bin/twm/fm.py")
         elif sel == 2:
             be.api.subscript("/bin/twm/ala.py")
@@ -988,9 +1007,6 @@ def hs() -> None:
 def vmain() -> None:
     while not vr("quit_twm"):
         vr("hs")()
-    vr("b").charging_enabled = True
-    vr("p")._aldo4_voltage_setpoint = 3300
-    vr("player").deinit()
 
 
 vr("rk", rk)
@@ -1006,6 +1022,7 @@ vr("tix", 0)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
+vr("fselect", fselect)
 vr("check_timers", check_timers)
 vr("updi", updi)
 vr("clocker", clocker)
@@ -1035,6 +1052,7 @@ del (
     bati,
     ring_alarm,
     ring_timer,
+    fselect,
     check_timers,
     updi,
     clocker,

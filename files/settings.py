@@ -10,10 +10,14 @@ def setm() -> None:
                 "Idle brightness",
                 "Vibration [" + ("ON" if vr("vibrate") else "OFF") + "]",
                 "Sounds [" + ("ON" if vr("sounds") else "OFF") + "]",
+                "Alarm sound",
+                "Timer sound",
+                "Notification sound",
                 "Set the time",
                 "Reload",
                 "Enable devmode (once)",
                 "Enable devmode (permenantly)",
+                "About",
             ],
             preselect=last,
         )
@@ -105,27 +109,90 @@ def setm() -> None:
                 vr("refr")()
                 time.sleep(3)
         elif sel == 6:
+            fsel = vr("fselect")("/usr/share/sounds")
+            if fsel is not None:
+                vr("s_al", fsel)
+                if fsel == "/usr/share/sounds/twm_alarm.wav":
+                    fsel = False
+                try:
+                    remount("/", False)
+                    cptoml.put("alarm_sound", vr("s_al"), subtable="TWM")
+                    remount("/", True)
+                except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
+                    vr("j").clear()
+                    vr("j").nwrite("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
+                    vr("refr")()
+                    time.sleep(3)
+        elif sel == 7:
+            fsel = vr("fselect")("/usr/share/sounds")
+            if fsel is not None:
+                vr("s_tm", fsel)
+                if fsel == "/usr/share/sounds/twm_timer.wav":
+                    fsel = False
+                try:
+                    remount("/", False)
+                    cptoml.put("timer_sound", vr("s_tm"), subtable="TWM")
+                    remount("/", True)
+                except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
+                    vr("j").clear()
+                    vr("j").nwrite("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
+                    vr("refr")()
+                    time.sleep(3)
+        elif sel == 8:
+            fsel = vr("fselect")("/usr/share/sounds")
+            if fsel is not None:
+                vr("s_no", fsel)
+                if fsel == "/usr/share/sounds/twm_notification.wav":
+                    fsel = False
+                try:
+                    remount("/", False)
+                    cptoml.put("notification_sound", vr("s_no"), subtable="TWM")
+                    remount("/", True)
+                except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
+                    vr("j").clear()
+                    vr("j").nwrite("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
+                    vr("refr")()
+                    time.sleep(3)
+        elif sel == 9:
             vr("vibr")(vr("err_seq"))
             vr("j").clear()
             vr("j").nwrite("Not yet implemented!")
             vr("player").play(vr("s_no"))
             vr("refr")()
             time.sleep(1.8)
-        elif sel == 7:
+        elif sel == 10:
             be.based.run("reload")
             vr("quit_twm", True)
-        elif sel == 8:
+        elif sel == 11:
             vr("j").clear()
             vr("j").nwrite("Enabling.. ")
             vr("refr")()
             be.based.run("devmode -q")
             vr("quit_twm", True)
-        else:
+        elif sel == 12:
             vr("j").clear()
             vr("j").nwrite("Enabling (permenantly).. ")
             vr("refr")()
             be.based.run("devmode -q -p")
             vr("quit_twm", True)
+        else:
+            vr("j").clear()
+            vr("j").write("Beryllium OS T-Watch Manager")
+            vr("j").write("\nAuthor: Bill Sideris")
+            vr("j").write("        18-08-2024")
+            vr("refr")()
+            k = vr("rk")()
+            t = vr("rt")()
+            while not (k[0] or k[1] or t):
+                k = vr("rk")()
+                t = vr("rt")()
+                time.sleep(0.05)
 
 
 vr("setm", setm)

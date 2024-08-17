@@ -153,9 +153,78 @@ def fselm(filen) -> None:
                 vr("wany")()
 
 
+def confsel(filen) -> None:
+    while True:
+        sel = vr("dmenu")(
+            "File selected | " + filen[0][:22],
+            [
+                "File info",
+                "View as text",
+                "Confirm selection",
+            ],
+        )
+        if sel == -1:
+            return False
+        elif not sel:
+            sz = filen[3]
+            if sz < 1024:
+                sz = f"{int(sz)}B"
+            elif sz < 1048576:
+                sz = f"{int(sz/1024)}K"
+            elif sz < 1073741824:
+                sz = f"{int(sz/1048576)}M"
+            else:
+                sz = f"{int(sz/1073741824)}G"
+            modtime = filen[4]
+            modtime = (
+                vr("months")[modtime.tm_mon - 1]
+                + " "
+                + str(modtime[2])
+                + " "
+                + ("0" if modtime.tm_hour < 10 else "")
+                + str(modtime[3])
+                + ":"
+                + ("0" if modtime.tm_min < 10 else "")
+                + str(modtime[4])
+            )
+            vr("ctop")(
+                "File Info: "
+                + filen[0]
+                + "\n"
+                + (vr("c").size[0] * "-")
+                + "\nFull path: \n"
+                + str(be.api.fs.base())
+                + "/"
+                + filen[0]
+                + "\n\nSize: "
+                + sz
+                + "\nModified: "
+                + modtime
+            )
+
+            vr("waitc")()
+            vr("refr")()
+            vr("wany")()
+        elif sel == 1:
+            vr("j").clear()
+            with be.api.fs.open(filen[0]) as f:
+                lines = f.readlines()
+                for i in lines[:-1]:
+                    vr("j").nwrite(i)
+                if lines:
+                    vr("j").nwrite(lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)])
+                vr("waitc")()
+                vr("refr")()
+                vr("wany")()
+        else:
+            return True
+
+
 def filem() -> None:
     old = getcwd()
     sel = 0
+    if vr("selector") is not None:
+        chdir(be.api.fs.resolve(vr("selector")))
     while True:
         listing = be.api.fs.listdir()
         notr = getcwd() != "/"
@@ -167,7 +236,10 @@ def filem() -> None:
         if len(cwdn) > remsps:
             cwdn = cwdn[: remsps - 2] + ".."
         sel = vr("dmenu")(
-            "File Manager | In: " + cwdn,
+            "File "
+            + ("Manager" if vr("selector") is None else "Picker")
+            + " | In: "
+            + cwdn,
             fl,
             preselect=sel,
         )
@@ -182,6 +254,15 @@ def filem() -> None:
                 if be.api.fs.isdir(listing[sel - 1][0]) == 1:
                     chdir(listing[sel - 1][0])
                     sel = 0
+                elif vr("selector") is not None:
+                    slitem = listing[sel - (1 if notr else 0)]
+                    if vr("confsel")(slitem):
+                        vr(
+                            "selector",
+                            str(be.api.fs.base()) + "/" + slitem[0],
+                        )
+                        vr("selected", True)
+                        break
                 else:
                     vr("fselm")(listing[sel - (1 if notr else 0)])
         else:
@@ -193,12 +274,11 @@ def filem() -> None:
     chdir(old)
 
 
+vr("confsel", confsel)
 vr("wany", wany)
-del wany
 vr("fselm", fselm)
-del fselm
 vr("filem", filem)
-del filem
+del confsel, wany, fselm, filem
 vr("filem")()
 vrd("wany")
 vrd("fselm")
