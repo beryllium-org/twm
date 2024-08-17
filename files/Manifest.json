@@ -2,7 +2,7 @@
     "JPKG_minimum_version": 2,
     "package_name": "twm",
     "version": [1, 0, 0],
-    "dependencies": [],
+    "dependencies": ["tws3-config"],
     "conflicts": [],
     "install": "installer.py",
     "remove": "uninstaller.py",
