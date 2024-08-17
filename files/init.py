@@ -29,7 +29,6 @@ vr("bop_seq", [vr("v").effect(3)])
 vr("bop_bad_seq", [vr("v").effect(1)])
 vr("clk_seq", [vr("v").effect(26)])
 vr("confirm_bop_seq", [vr("v").effect(13)])
-vr("pwr_seq", [vr("v").effect(20)])
 vr("err_seq", [vr("v").effect(47), vr("v").pause(0.3), vr("v").effect(47)])
 vr("vibrate", cptoml.fetch("vibration", subtable="TWM") == True)
 
@@ -488,7 +487,6 @@ def lm(start_locked: bool = False) -> None:
                 elif t[0] or start_locked:
                     if vr("lowpow"):
                         vr("resume")()
-                        vr("vibr")(vr("pwr_seq"))
                         if time.monotonic() - press < 1.1:
                             return
                         lp = time.monotonic()
@@ -658,7 +656,6 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                 if k[1]:
                     vr("quit_twm", True)
                 elif k[0]:
-                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")()
                     retry = True
                     break
@@ -768,7 +765,6 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                 if k[1]:
                     vr("quit_twm", True)
                 elif k[0]:
-                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")()
                     retry = True
                     break

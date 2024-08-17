@@ -263,7 +263,6 @@ def ftimer() -> None:
                                 retry = True
                                 break
                 if k[0]:
-                    vr("vibr")(vr("pwr_seq"))
                     vr("lm")(True)
                     retry = True
                     break
