@@ -135,9 +135,9 @@ def moved() -> tuple:
     oac = vr("last_accel")
     vr("last_accel", tac)
     return (
-        abs(abs(tac[0]) - abs(oac[0])) > 0.15
-        or abs(abs(tac[1]) - abs(oac[1])) > 0.15
-        or abs(abs(tac[2]) - abs(oac[2])) > 0.15
+        abs(abs(tac[0]) - abs(oac[0])) > 0.12
+        or abs(abs(tac[1]) - abs(oac[1])) > 0.12
+        or abs(abs(tac[2]) - abs(oac[2])) > 0.12
     )
 
 
@@ -459,7 +459,7 @@ def updi(force=False) -> bool:
         vr("j").nwrite(tmpip)
         need_refr = True
 
-    if need_refr:
+    if need_refr and vr("d").brightness:
         vr("refr")()
 
     if res:
