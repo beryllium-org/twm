@@ -427,7 +427,7 @@ def updi(force=False) -> bool:
     tst = vr("b").status
     if tst != "discharging":
         if vr("chm") != tst:
-            if tst != "charged" and vr("chm") is not None:
+            if tst != "charged" and vr("chm") not in ["charged", None]:
                 res = True
             vr("chm", tst)
             vr("j").move(y=11)
@@ -435,13 +435,14 @@ def updi(force=False) -> bool:
             vr("j").move(y=11, x=(vr("c").size[0] // 2) - (len(tst) // 2))
             vr("j").nwrite(tst)
             force = True
-    elif vr("chm"):
+    elif vr("chm") not in [None, "discharging"]:
         vr("j").move(y=11)
         vr("lc")()
-        if vr("chm") is not None:
-            res = True
-        vr("chm", "")
+        res = True
+        vr("chm", "discharging")
         force = True
+    elif vr("chm") is None:
+        vr("chm", "discharging")
 
     if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
@@ -513,6 +514,7 @@ def lm(start_locked: bool = False) -> None:
     vr("chm", None)
     if start_locked:
         vr("d").brightness = vr("susbri")
+        vr("suspend")()
     retry = True
     while retry and not vr("quit_twm"):
         retry = False
@@ -567,12 +569,10 @@ def lm(start_locked: bool = False) -> None:
                     gc.collect()
                 else:
                     if vr("d").brightness:
-                        # term.write("chk")
                         if vr("moved")() or vr("rt")():
                             lm = time.monotonic()
-                        elif time.monotonic() - lm > 30:
+                        elif time.monotonic() - lm > 60:
                             if vr("d").brightness > 0.001:
-                                # term.write("chk2")
                                 vr("d").brightness -= 0.001
                             else:
                                 vr("d").brightness = 0
@@ -585,7 +585,6 @@ def lm(start_locked: bool = False) -> None:
                         lm = time.monotonic()
                         time.sleep(0.2)
                     else:
-                        # term.write("else")
                         time.sleep(0.5)
                 if vr("d").brightness:
                     vr("clocker")()
@@ -596,7 +595,7 @@ def lm(start_locked: bool = False) -> None:
                 if t[1] and not vr("lowpow"):
                     vr("quit_twm", True)
                     return
-                elif t[0] or start_locked:
+                elif t[0]:
                     if vr("lowpow"):
                         vr("resume")()
                         if time.monotonic() - press < 1.1:
@@ -609,7 +608,6 @@ def lm(start_locked: bool = False) -> None:
                             vr("suspend")()
                             lm = time.monotonic()
                     press = time.monotonic()
-                    start_locked = False
                 elif vr("lowpow"):
                     be.api.tasks.run()
         except KeyboardInterrupt:
