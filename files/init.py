@@ -748,7 +748,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     u = False
                     vr("j").move(y=3)
                     bigl = 7
-                    big = len(data) > vr("c").size[1] - bigl
+                    big = len(data) > vr("c").size[1] - bigl + 1
                     if not big:
                         vr("j").write()
                         for i in range(len(data)):
@@ -759,11 +759,8 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         for i in range(ysize + 1 - bigl):
                             vr("ditem")(data[i + scl], sel - scl == i)
                         vr("lc")()
-                        vr("j").write(
-                            "   [...]"
-                            if (scl != len(data) - ysize + 1 + bigl)
-                            else None
-                        )
+                        if scl != len(data) - (ysize + 1 - bigl):
+                            vr("j").write("   [...]")
                     vr("refr")()
                 if db:
                     vr("vibr")(vr("bop_seq") if db == 1 else vr("bop_bad_seq"))
@@ -841,6 +838,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
         vr("j").move(y=vr("c").size[1] - 1, x=34)
         vr("j").nwrite("OK")
         db = 0
+        tm = -1
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
@@ -892,24 +890,26 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
                     elif t[0]["y"] > 190:
-                        db = 1
-                        if t[0]["x"] < 61:  # minus
-                            if sel:
-                                sel -= 1
-                            else:
-                                db += 1
-                        elif t[0]["x"] < 121:  # plus
-                            if sel < len(data) - 1:
-                                sel += 1
-                            else:
-                                db += 1
-                        elif t[0]["x"] < 181:  # cancel
-                            vr("vibr")(vr("confirm_bop_seq"))
-                            break
-                        else:  # confirm
-                            vr("vibr")(vr("confirm_bop_seq"))
-                            return sel
-                        time.sleep(0.1)
+                        if timeout - tm > 0.145:
+                            tm = timeout
+                            db = 1
+                            if t[0]["x"] < 61:  # minus
+                                if sel:
+                                    sel -= 1
+                                else:
+                                    db += 1
+                            elif t[0]["x"] < 121:  # plus
+                                if sel < len(data) - 1:
+                                    sel += 1
+                                else:
+                                    db += 1
+                            elif t[0]["x"] < 181:  # cancel
+                                vr("vibr")(vr("confirm_bop_seq"))
+                                break
+                            else:  # confirm
+                                vr("vibr")(vr("confirm_bop_seq"))
+                                return sel
+                            time.sleep(0.1)
                     else:
                         x = t[0]["x"]
                         if x > 5 and x < 235:

@@ -12,6 +12,8 @@ if (not be.api.console_connected()) or "f" in vr("opts")["o"]:
                 vr("b").charging_enabled = True
                 vr("p")._aldo4_voltage_setpoint = 3300
                 vr("player").deinit()
+                if vr("lowpow"):
+                    vr("resume")()
                 break
             except Exception as err:
                 vrp("crashes")
