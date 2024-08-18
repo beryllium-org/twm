@@ -737,28 +737,34 @@ def dmenu(title: str, data: list, preselect=0) -> int:
         vr("j").move(y=ysize, x=34)
         vr("j").nwrite("OK")
         db = 0
+        tm = -1
+        u = True
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
                     retry = True
                     break
-                vr("j").move(y=3)
-                bigl = 7
-                big = len(data) > vr("c").size[1] - bigl
-                if not big:
-                    vr("j").write()
-                    for i in range(len(data)):
-                        vr("ditem")(data[i], sel == i)
-                else:
-                    vr("lc")()
-                    vr("j").write("   [...]" if scl else None)
-                    for i in range(ysize + 1 - bigl):
-                        vr("ditem")(data[i + scl], sel - scl == i)
-                    vr("lc")()
-                    vr("j").write(
-                        "   [...]" if (scl != len(data) - ysize + 1 + bigl) else None
-                    )
-                vr("refr")()
+                if u:
+                    u = False
+                    vr("j").move(y=3)
+                    bigl = 7
+                    big = len(data) > vr("c").size[1] - bigl
+                    if not big:
+                        vr("j").write()
+                        for i in range(len(data)):
+                            vr("ditem")(data[i], sel == i)
+                    else:
+                        vr("lc")()
+                        vr("j").write("   [...]" if scl else None)
+                        for i in range(ysize + 1 - bigl):
+                            vr("ditem")(data[i + scl], sel - scl == i)
+                        vr("lc")()
+                        vr("j").write(
+                            "   [...]"
+                            if (scl != len(data) - ysize + 1 + bigl)
+                            else None
+                        )
+                    vr("refr")()
                 if db:
                     vr("vibr")(vr("bop_seq") if db == 1 else vr("bop_bad_seq"))
                     db = 0
@@ -774,12 +780,14 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     timeout = time.monotonic()
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
-                    elif t[0]["y"] > 190:
+                    elif t[0]["y"] > 190 and timeout - tm > 0.145:
                         db = 1
                         x = t[0]["x"]
+                        tm = timeout
                         if x < 61:  # up
                             if sel:
                                 sel -= 1
+                                u = True
                                 if scl and (sel - scl < 0):
                                     scl -= 1
                             else:
@@ -787,6 +795,7 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         elif x < 121:  # down
                             if sel < len(data) - 1:
                                 sel += 1
+                                u = True
                                 if big and (sel - scl > ysize - bigl):
                                     scl += 1
                             else:
@@ -797,7 +806,6 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         else:  # confirm
                             vr("vibr")(vr("confirm_bop_seq"))
                             return sel
-                        time.sleep(0.05)
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05
