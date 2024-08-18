@@ -64,13 +64,18 @@ def fselm(filen) -> None:
         elif sel == 1:
             vr("j").clear()
             with be.api.fs.open(filen[0]) as f:
-                lines = f.readlines()
-                for i in lines[:-1]:
-                    vr("j").nwrite(i)
-                if lines:
-                    vr("j").nwrite(lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)])
-                vr("waitc")()
+                try:
+                    lines = f.readlines()
+                    for i in lines[:-1]:
+                        vr("j").nwrite(i)
+                    if lines:
+                        vr("j").nwrite(
+                            lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)]
+                        )
+                except:
+                    vr("j").nwrite("ERROR: Not a text file!")
                 vr("refr")()
+                vr("waitc")()
                 vr("wany")()
         elif sel == 2:
             if be.api.fs.isdir("/bin/duckycat.lja") == 0:
