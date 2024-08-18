@@ -184,8 +184,12 @@ def setm() -> None:
         else:
             vr("j").clear()
             vr("j").write("Beryllium OS T-Watch Manager")
-            vr("j").write("\nAuthor: Bill Sideris")
-            vr("j").write("        18-08-2024")
+            vr("j").write("\nAuthor: Bill Sideris\n\n")
+            ot = term.console
+            term.console = vr("c")
+            be.based.run("neofetch")
+            term.console = ot
+            del ot
             vr("refr")()
             k = vr("rk")()
             t = vr("rt")()
