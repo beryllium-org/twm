@@ -1,17 +1,62 @@
-vr("j", jcurses())
+vr("d", be.devices["DISPLAY"][0])
+vr("d").auto_refresh = False
 vr("c", pv[0]["consoles"]["ttyDISPLAY0"])
+vr("j", jcurses())
 vr("j").console = vr("c")
+vr("c").enable()
 vr("j").clear()
+vr("j").trigger_dict = {
+    "ctrlC": -1,
+    "overflow": 8,
+    "rest": "ignore",
+    "rest_a": "common",
+    "echo": "none",
+    "prefix": "",
+    "permit_pos": False,
+    "idle": 9,
+}
+vr(
+    "logo",
+    [
+        ",-----------,",
+        "| 4    9.01 |",
+        "|           |",
+        "|           |",
+        "| BERYLLIUM |",
+        "'-----------'",
+    ],
+)
+
+
+def refr() -> None:
+    vr("d").refresh()
+
+
+vr("refr", refr)
+del refr
+
+vr("lmid", (vr("c").size[0] // 2) - (len(vr("logo")[0]) // 2))
+vr("j").move(y=5)
+vr("j").nwrite(
+    vr("j").nwrite(" " * vr("lmid") + ("\n" + (" " * vr("lmid"))).join(vr("logo")))
+)
+vr("j").move(y=12, x=12)
+vr("j").nwrite("<|" + (" " * 14) + ">")
+vrd("lmid")
+vr("refr")()
+
 vr("p", be.devices["AXP2101"][0])
 vr("t", be.devices["ftouch"][0])
-vr("d", be.devices["DISPLAY"][0])
 vr("b", be.devices["bat"][0])
 vr("a", be.devices["BMA423"][0])
 vr("r", be.devices["rtc"][0])
 vr("v", be.devices["vib"][0])
 vr("r").alarm_status = False
-vr("d").auto_refresh = False
 vr("i2s", be.devices["i2s"][0])
+
+vr("j").move(y=12, x=14)
+vr("j").nwrite("|")
+vr("refr")()
 
 
 class player:
@@ -77,6 +122,11 @@ vr("cached_ip", "")
 vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
+
+vr("j").move(y=12, x=14)
+vr("j").nwrite("|")
+vr("refr")()
+
 vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
 vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM") + 1) * 0.001)
 vr("chmaxt", None)
@@ -104,18 +154,9 @@ vr("s_no", cptoml.fetch("notification_sound", subtable="TWM"))
 if not isinstance(vr("s_no"), str):
     vr("s_no", "/usr/share/sounds/twm_notification.wav")
 
-
-vr("j").trigger_dict = {
-    "ctrlC": -1,
-    "overflow": 8,
-    "rest": "ignore",
-    "rest_a": "common",
-    "echo": "none",
-    "prefix": "",
-    "permit_pos": False,
-    "idle": 9,
-}
-vr("c").enable()
+vr("j").move(y=12, x=15)
+vr("j").nwrite("|")
+vr("refr")()
 
 
 def rk() -> tuple:
@@ -157,10 +198,6 @@ def waitc() -> None:
 
 def lc() -> None:
     vr("j").nwrite("\r\033[K")
-
-
-def refr() -> None:
-    vr("d").refresh()
 
 
 def clocker() -> None:
@@ -254,6 +291,11 @@ def clocker() -> None:
         vr("updi")(True)
     elif vr("lowpow"):
         time.sleep(0.15)
+
+
+vr("j").move(y=12, x=16)
+vr("j").nwrite("|")
+vr("refr")()
 
 
 def suspend() -> None:
@@ -421,6 +463,11 @@ def ring_timer() -> None:
     vr("player").stop()
 
 
+vr("j").move(y=12, x=17)
+vr("j").nwrite("|")
+vr("refr")()
+
+
 def updi(force=False) -> bool:
     need_refr = False
     res = False
@@ -509,6 +556,11 @@ def vibr(pattern: list) -> None:
 
 def stv() -> None:
     vr("v").stop()
+
+
+vr("j").move(y=12, x=18)
+vr("j").nwrite("|")
+vr("refr")()
 
 
 def lm(start_locked: bool = False) -> None:
@@ -618,6 +670,9 @@ def lm(start_locked: bool = False) -> None:
             return
 
 
+vr("j").move(y=12, x=19)
+vr("j").nwrite("|")
+vr("refr")()
 vr(
     "bigs",
     [
@@ -666,17 +721,11 @@ vr(
         "Sunday",
     ],
 )
-vr(
-    "logo",
-    [
-        ",-----------,",
-        "| 4    9.01 |",
-        "|           |",
-        "|           |",
-        "| BERYLLIUM |",
-        "'-----------'",
-    ],
-)
+
+
+vr("j").move(y=12, x=20)
+vr("j").nwrite("|")
+vr("refr")()
 
 
 def drawbox() -> None:
@@ -816,6 +865,11 @@ def dmenu(title: str, data: list, preselect=0) -> int:
     return -1
 
 
+vr("j").move(y=12, x=21)
+vr("j").nwrite("|")
+vr("refr")()
+
+
 def slidemenu(title: str, data: list, preselect=0) -> int:
     retry = True
     sel = preselect
@@ -946,8 +1000,13 @@ def appm() -> None:
             # be.based.command.fpexec("/usr/share/applications/")
 
 
+vr("j").move(y=12, x=22)
+vr("j").nwrite("|")
+vr("refr")()
+
+
 def hs() -> None:
-    vr("lm")(True)
+    vr("lm")()
     while not vr("quit_twm"):
         sel = vr("dmenu")(
             "Home",
@@ -1031,6 +1090,11 @@ def vmain() -> None:
         vr("hs")()
 
 
+vr("j").move(y=12, x=23)
+vr("j").nwrite("|")
+vr("refr")()
+
+
 vr("rk", rk)
 vr("rt", rt)
 vr("ra", ra)
@@ -1039,7 +1103,6 @@ vr("moved", moved)
 vr("ctop", ctop)
 vr("waitc", waitc)
 vr("lc", lc)
-vr("refr", refr)
 vr("tix", 0)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
@@ -1070,7 +1133,6 @@ del (
     ctop,
     waitc,
     lc,
-    refr,
     bati,
     ring_alarm,
     ring_timer,
@@ -1093,5 +1155,9 @@ del (
     hs,
     vmain,
 )
+
+vr("j").move(y=12, x=24)
+vr("j").nwrite("||||")
+vr("refr")()
 
 vrp("ok")
