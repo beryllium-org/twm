@@ -567,10 +567,12 @@ def lm(start_locked: bool = False) -> None:
                     gc.collect()
                 else:
                     if vr("d").brightness:
-                        if vr("moved")():
+                        # term.write("chk")
+                        if vr("moved")() or vr("rt")():
                             lm = time.monotonic()
                         elif time.monotonic() - lm > 30:
                             if vr("d").brightness > 0.001:
+                                # term.write("chk2")
                                 vr("d").brightness -= 0.001
                             else:
                                 vr("d").brightness = 0
@@ -583,6 +585,7 @@ def lm(start_locked: bool = False) -> None:
                         lm = time.monotonic()
                         time.sleep(0.2)
                     else:
+                        # term.write("else")
                         time.sleep(0.5)
                 if vr("d").brightness:
                     vr("clocker")()
