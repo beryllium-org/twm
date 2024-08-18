@@ -135,9 +135,9 @@ def moved() -> tuple:
     oac = vr("last_accel")
     vr("last_accel", tac)
     return (
-        abs(tac[0] - oac[0]) > 0.1
-        or abs(tac[1] - oac[1]) > 0.1
-        or abs(tac[2] - oac[2]) > 0.1
+        abs(abs(tac[0]) - abs(oac[0])) > 0.15
+        or abs(abs(tac[1]) - abs(oac[1])) > 0.15
+        or abs(abs(tac[2]) - abs(oac[2])) > 0.15
     )
 
 
@@ -493,6 +493,7 @@ def swipe_unlock() -> bool:
             checkt = time.monotonic()
         vr("refr")()
         ct = vr("rt")()
+    vr("chm", None)
     return ll > 7
 
 
