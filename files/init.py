@@ -773,7 +773,7 @@ def dmenu(title: str, data: list, preselect: int = 0, timeout: int = 10) -> int:
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
         sel = preselect
         scl = 0
-        while sel - scl > vr("c").size[1] - 6:
+        while sel - scl > vr("c").size[1] - 8:
             scl += 1
         vr("drawbox")()
         ysize = vr("c").size[1] - 1
@@ -1008,6 +1008,7 @@ vr("refr")()
 def hs() -> None:
     vr("d").brightness = vr("mainbri")
     vr("lm")()
+    prev = 0
     while not vr("quit_twm"):
         sel = vr("dmenu")(
             "Home",
@@ -1018,11 +1019,12 @@ def hs() -> None:
                 "Stopwatch",
                 "Timer",
                 "Settings",
-                "Quit",
-                "Restart",
-                "Shutdown",
+                "Power",
             ],
+            preselect=prev,
         )
+        if sel != -1:
+            prev = sel
         if sel == -1:
             if not vr("quit_twm"):
                 vr("lm")()
@@ -1040,50 +1042,65 @@ def hs() -> None:
         elif sel == 5:
             be.api.subscript("/bin/twm/settings.py")
         elif sel == 6:
-            vr("quit_twm", True)
-        elif sel == 7:
             sel = vr("dmenu")(
-                "Reboot",
+                "Power menu",
                 [
+                    "Shutdown",
+                    "Exit to shell",
+                    "Reload",
                     "Reboot",
                     "Reboot safemode",
                     "Reboot to TinyUF2",
                     "Reboot to bootloader",
+                    "Developer mode (once)",
+                    "Developer mode (permenantly)",
                 ],
             )
-            if sel == 0:
+            if not sel:
+                vr("j").clear()
+                vr("j").nwrite("Shutting down.. ")
+                vr("refr")()
+                be.based.run("shutdown")
+                vr("j").nwrite("Bye!")
+                vr("refr")()
+            elif sel == 1:
+                vr("j").clear()
+                vr("j").nwrite("Bye!")
+                vr("refr")()
+            elif sel == 2:
+                be.based.run("reload")
+            elif sel == 3:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting.. ")
                 vr("refr")()
                 be.based.run("reboot")
-                vr("quit_twm", True)
-            elif sel == 1:
+            elif sel == 4:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to safemode.. ")
                 vr("refr")()
                 be.based.run("reboot safemode")
-                vr("quit_twm", True)
-            elif sel == 2:
+            elif sel == 5:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to TinyUF2.. ")
                 vr("refr")()
                 be.based.run("reboot uf2")
-                vr("quit_twm", True)
-            elif sel == 3:
+            elif sel == 6:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to bootloader.. ")
                 vr("refr")()
                 be.based.run("reboot bootloader")
+            elif sel == 7:
+                vr("j").clear()
+                vr("j").nwrite("Enabling.. ")
+                vr("refr")()
+                be.based.run("devmode -q")
+            elif sel == 8:
+                vr("j").clear()
+                vr("j").nwrite("Enabling (permenantly).. ")
+                vr("refr")()
+                be.based.run("devmode -q -p")
+            if sel != -1:
                 vr("quit_twm", True)
-        elif sel == 8:
-            vr("j").clear()
-            vr("j").nwrite("Shutting down.. ")
-            vr("refr")()
-            be.based.run("shutdown")
-            vr("j").nwrite("Bye!")
-            vr("refr")()
-        else:
-            raise RuntimeError("Unknown value!")
 
 
 def vmain() -> None:

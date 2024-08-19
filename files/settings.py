@@ -14,9 +14,6 @@ def setm() -> None:
                 "Timer sound",
                 "Notification sound",
                 "Set the time",
-                "Reload",
-                "Enable devmode (once)",
-                "Enable devmode (permenantly)",
                 "About",
             ],
             preselect=last,
@@ -166,21 +163,6 @@ def setm() -> None:
             vr("player").play(vr("s_no"))
             vr("refr")()
             time.sleep(1.8)
-        elif sel == 10:
-            be.based.run("reload")
-            vr("quit_twm", True)
-        elif sel == 11:
-            vr("j").clear()
-            vr("j").nwrite("Enabling.. ")
-            vr("refr")()
-            be.based.run("devmode -q")
-            vr("quit_twm", True)
-        elif sel == 12:
-            vr("j").clear()
-            vr("j").nwrite("Enabling (permenantly).. ")
-            vr("refr")()
-            be.based.run("devmode -q -p")
-            vr("quit_twm", True)
         else:
             vr("j").clear()
             vr("j").write("Beryllium OS T-Watch Manager")
