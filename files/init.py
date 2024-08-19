@@ -1023,8 +1023,7 @@ def hs() -> None:
             ],
             preselect=prev,
         )
-        if sel != -1:
-            prev = sel
+        prev = sel if sel != -1 else 0
         if sel == -1:
             if not vr("quit_twm"):
                 vr("lm")()
