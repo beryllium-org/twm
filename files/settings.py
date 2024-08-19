@@ -168,9 +168,17 @@ def setm() -> None:
             vr("j").write("Beryllium OS T-Watch Manager")
             vr("j").write("\nAuthor: Bill Sideris\n\n")
             ot = term.console
+            oat = pv[0]["console_active"]
+            pv[0]["console_active"] = "ttyDISPLAY0"
             term.console = vr("c")
+            term.stdout_buf_b = bytes()
+            term.stdout_buf = None
+            olds = term.hold_stdout
+            term.hold_stdout = False
             be.based.run("neofetch")
             term.console = ot
+            term.hold_stdout = olds
+            pv[0]["console_active"] = oat
             del ot
             vr("refr")()
             k = vr("rk")()
