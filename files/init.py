@@ -1006,6 +1006,7 @@ vr("refr")()
 
 
 def hs() -> None:
+    vr("d").brightness = vr("mainbri")
     vr("lm")()
     while not vr("quit_twm"):
         sel = vr("dmenu")(
