@@ -22,6 +22,7 @@ def fselm(filen) -> None:
                 "Execute as a ducky script",
             ],
             preselect=prev,
+            timeout=None if ap else 10,
         )
         prev = sel
         if sel == -1:

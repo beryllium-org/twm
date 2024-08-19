@@ -764,10 +764,10 @@ def ditem(item: str, sel: bool) -> None:
     vr("j").write(ldat)
 
 
-def dmenu(title: str, data: list, preselect=0) -> int:
+def dmenu(title: str, data: list, preselect: int = 0, timeout: int = 10) -> int:
     retry = True
     while retry and not vr("quit_twm"):
-        timeout = time.monotonic()
+        timeout_c = time.monotonic()
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
@@ -823,13 +823,13 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                     retry = True
                     break
                 elif t:
-                    timeout = time.monotonic()
+                    timeout_c = time.monotonic()
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
-                    elif t[0]["y"] > 190 and timeout - tm > 0.145:
+                    elif t[0]["y"] > 190 and timeout_c - tm > 0.145:
                         db = 1
                         x = t[0]["x"]
-                        tm = timeout
+                        tm = timeout_c
                         if x < 61:  # up
                             if sel:
                                 sel -= 1
@@ -852,10 +852,10 @@ def dmenu(title: str, data: list, preselect=0) -> int:
                         else:  # confirm
                             vr("vibr")(vr("confirm_bop_seq"))
                             return sel
-                elif time.monotonic() - timeout > 10:
+                elif timeout is not None and time.monotonic() - timeout_c > timeout:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05
-                        time.sleep(0.12)
+                        time.sleep(0.145)
                     else:
                         vr("lm")(True)
                         retry = True
