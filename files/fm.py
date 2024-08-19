@@ -8,17 +8,22 @@ def wany() -> None:
 
 
 def fselm(filen) -> None:
+    prev = 0
     while True:
+        ap = vr("player").playing
         sel = vr("dmenu")(
             "File selected | " + filen[0][:22],
             [
                 "File info",
                 "View as text",
+                "Play as audio" if not ap else "Stop audio",
                 "Send over ducky",
                 "Execute as a program",
                 "Execute as a ducky script",
             ],
+            preselect=prev,
         )
+        prev = sel
         if sel == -1:
             break
         elif not sel:
@@ -72,12 +77,39 @@ def fselm(filen) -> None:
                         vr("j").nwrite(
                             lines[-1][: -(1 if lines[-1][-1] == "\n" else 0)]
                         )
+                        vr("refr")()
+                        vr("waitc")()
+                        vr("wany")()
                 except:
                     vr("j").nwrite("ERROR: Not a text file!")
+                    vr("vibr")(vr("err_seq"))
+                    vr("player").play(vr("s_no"))
+                    vr("refr")()
+                    time.sleep(2)
+
+        elif sel == 2:
+            if filen[0].endswith(".wav"):
+                if ap:
+                    vr("player").stop()
+                else:
+                    try:
+                        vr("player").play(filen[0])
+                    except:
+                        vr("vibr")(vr("err_seq"))
+                        vr("player").play(vr("s_no"))
+                        vr("j").clear()
+                        vr("j").nwrite("Failed to play!")
+                        vr("refr")()
+                        time.sleep(2)
+            else:
+                vr("vibr")(vr("err_seq"))
+                vr("player").play(vr("s_no"))
+                vr("j").clear()
+                vr("j").nwrite("Not a WAV file!")
                 vr("refr")()
                 vr("waitc")()
                 vr("wany")()
-        elif sel == 2:
+        elif sel == 3:
             if be.api.fs.isdir("/bin/duckycat.lja") == 0:
                 vr("waitc")()
                 vr("j").clear()
@@ -86,12 +118,17 @@ def fselm(filen) -> None:
                 be.based.run("duckycat " + filen[0])
                 if int(be.api.getvar("return")):
                     vr("j").nwrite("FAIL")
+                    vr("vibr")(vr("err_seq"))
+                    vr("player").play(vr("s_no"))
+                    time.sleep(1.5)
                 else:
                     vr("j").nwrite("OK")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             else:
+                vr("vibr")(vr("err_seq"))
+                vr("player").play(vr("s_no"))
                 vr("j").clear()
                 vr("j").nwrite(
                     "Ducky not installed!\n"
@@ -101,8 +138,8 @@ def fselm(filen) -> None:
                 vr("waitc")()
                 vr("refr")()
                 v = vr("ri")()
-        elif sel == 3:
-            if filen.endswith(".lja"):
+        elif sel == 4:
+            if filen[0].endswith(".lja"):
                 vr("waitc")()
                 vr("j").clear()
                 vr("j").nwrite("Running in based.. ")
@@ -112,7 +149,7 @@ def fselm(filen) -> None:
                 vr("refr")()
                 time.sleep(0.5)
                 break
-            elif filen.endswith(".py"):
+            elif filen[0].endswith(".py"):
                 vr("waitc")()
                 vr("j").clear()
                 vr("j").nwrite("Running in python.. ")
@@ -123,6 +160,8 @@ def fselm(filen) -> None:
                 time.sleep(0.5)
                 break
             else:
+                vr("vibr")(vr("err_seq"))
+                vr("player").play(vr("s_no"))
                 vr("j").clear()
                 vr("j").nwrite(
                     "Not an executable!\n"
@@ -141,12 +180,17 @@ def fselm(filen) -> None:
                 be.based.run("ducky " + filen[0])
                 if int(be.api.getvar("return")):
                     vr("j").nwrite("FAIL")
+                    vr("vibr")(vr("err_seq"))
+                    vr("player").play(vr("s_no"))
+                    time.sleep(1.5)
                 else:
                     vr("j").nwrite("OK")
                 vr("refr")()
                 time.sleep(0.5)
                 break
             else:
+                vr("vibr")(vr("err_seq"))
+                vr("player").play(vr("s_no"))
                 vr("j").clear()
                 vr("j").nwrite(
                     "Ducky not installed!\n"
