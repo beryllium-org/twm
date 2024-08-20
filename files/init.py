@@ -764,17 +764,24 @@ def ditem(item: str, sel: bool) -> None:
     vr("j").write(ldat)
 
 
-def dmenu(title: str, data: list, preselect: int = 0, timeout: int = 10) -> int:
+def dmenu(
+    title: str, data: list, preselect: int = 0, timeout: int = 10, remember: bool = True
+) -> int:
     retry = True
+    sel = preselect
+    scl = 0
+    while sel - scl > vr("c").size[1] - 8:
+        scl += 1
+    reset_sel = False
     while retry and not vr("quit_twm"):
         timeout_c = time.monotonic()
+        if reset_sel and not remember:
+            sel = 0
+            scl = 0
+            reset_sel = False
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
-        sel = preselect
-        scl = 0
-        while sel - scl > vr("c").size[1] - 8:
-            scl += 1
         vr("drawbox")()
         ysize = vr("c").size[1] - 1
         vr("j").move(y=ysize, x=5)
@@ -821,6 +828,7 @@ def dmenu(title: str, data: list, preselect: int = 0, timeout: int = 10) -> int:
                 elif k[0]:
                     vr("lm")()
                     retry = True
+                    reset_sel = True
                     break
                 elif t:
                     timeout_c = time.monotonic()
@@ -859,6 +867,7 @@ def dmenu(title: str, data: list, preselect: int = 0, timeout: int = 10) -> int:
                     else:
                         vr("lm")(True)
                         retry = True
+                        reset_sel = True
                         break
         except KeyboardInterrupt:
             vr("quit_twm", True)
@@ -1022,6 +1031,7 @@ def hs() -> None:
                 "Power",
             ],
             preselect=prev,
+            remember=False,
         )
         prev = sel if sel != -1 else 0
         if sel == -1:
