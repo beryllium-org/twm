@@ -1,6 +1,16 @@
 rename_process("twm")
 vr("opts", be.api.xarg())
-if (not be.api.console_connected()) or "f" in vr("opts")["o"]:
+try:
+    if be.api.console_connected() and "f" not in vr("opts")["o"]:
+        if "s" in vr("opts")["o"]:
+            raise KeyboardInterrupt
+        term.write(
+            "Another console is already connected!\nRerun with -f to run anyways, or disconnect to continue.\nCtrl + C to abort."
+        )
+        while be.api.console_connected():
+            if term.is_interrupted():
+                raise KeyboardInterrupt
+            time.sleep(1)
     vr("ok", 0)
     be.api.subscript("/bin/twm/init.py")
     if vr("ok") == 1:
@@ -28,5 +38,5 @@ if (not be.api.console_connected()) or "f" in vr("opts")["o"]:
         term.write("Failed to initialize TWM!")
     vr("c").disable()
     be.devices["DISPLAY"][0].auto_refresh = True
-else:
-    term.write("Another console is already connected, rerun with -f to run anyways.")
+except KeyboardInterrupt:
+    pass
