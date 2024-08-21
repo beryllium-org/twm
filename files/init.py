@@ -133,6 +133,7 @@ vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
 vr("timer", None)
 vr("timer_rem", None)
+vr("bcon", vr("p").is_battery_connected)
 vr("al_seq", [vr("v").effect(16)])
 vr("bop_seq", [vr("v").effect(3)])
 vr("bop_bad_seq", [vr("v").effect(1)])
@@ -175,11 +176,12 @@ def moved() -> tuple:
     tac = vr("ra")()
     oac = vr("last_accel")
     vr("last_accel", tac)
-    return (
-        abs(abs(tac[0]) - abs(oac[0])) > 0.12
-        or abs(abs(tac[1]) - abs(oac[1])) > 0.12
-        or abs(abs(tac[2]) - abs(oac[2])) > 0.12
+    res = (
+        abs(abs(tac[0]) - abs(oac[0])) > 0.2
+        or abs(abs(tac[1]) - abs(oac[1])) > 0.2
+        or abs(abs(tac[2]) - abs(oac[2])) > 0.2
     )
+    return res
 
 
 def ctop(data: str) -> None:
@@ -468,6 +470,10 @@ vr("j").nwrite("|")
 vr("refr")()
 
 
+def pstr() -> str:
+    return (str(vr("b").percentage) + "%") if vr("bcon") else "N/A"
+
+
 def updi(force=False) -> bool:
     need_refr = False
     res = False
@@ -493,7 +499,7 @@ def updi(force=False) -> bool:
 
     if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
-        vr("j").nwrite(str(vr("b").percentage) + "%" + " " * 3)
+        vr("j").nwrite(vr("pstr")() + " " * 3)
         need_refr = True
         vr("batc", time.monotonic())
         vr("bati")()
@@ -800,6 +806,11 @@ def dmenu(
                 if vr("check_timers")():
                     retry = True
                     break
+                vr("j").move(y=1, x=vr("c").size[0] - 4)
+                vr("j").nwrite(" " * 4)
+                cpstr = vr("pstr")()
+                vr("j").move(y=1, x=vr("c").size[0] - len(cpstr))
+                vr("j").nwrite(cpstr)
                 if u:
                     u = False
                     vr("j").move(y=3)
@@ -1131,6 +1142,7 @@ vr("ctop", ctop)
 vr("waitc", waitc)
 vr("lc", lc)
 vr("tix", 0)
+vr("pstr", pstr)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
@@ -1160,6 +1172,7 @@ del (
     ctop,
     waitc,
     lc,
+    pstr,
     bati,
     ring_alarm,
     ring_timer,
