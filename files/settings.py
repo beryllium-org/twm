@@ -164,9 +164,11 @@ def setm() -> None:
             vr("refr")()
             time.sleep(1.8)
         else:
-            vr("j").clear()
-            vr("j").write("Beryllium OS T-Watch Manager")
-            vr("j").write("\nAuthor: Bill Sideris\n\n")
+            vr("ctop")("About T-Watch-S3\n" + (vr("c").size[0] * "-"))
+            vr("j").move(y=3)
+            vr("j").write("Beryllium OS T-Watch Manager\n")
+            vr("j").write("Device UID:    " + ":".join(f"{b:02x}" for b in cpu.uid))
+            vr("j").write("Beryllium OS:  " + pv[0]["Version"] + "\n")
             ot = term.console
             oat = pv[0]["console_active"]
             pv[0]["console_active"] = "ttyDISPLAY0"
@@ -180,13 +182,18 @@ def setm() -> None:
             term.hold_stdout = olds
             pv[0]["console_active"] = oat
             del ot
+            vr("j").move(y=19, x=9)
+            vr("j").nwrite("-- Touch to go back --")
             vr("refr")()
-            k = vr("rk")()
-            t = vr("rt")()
-            while not (k[0] or k[1] or t):
+            try:
                 k = vr("rk")()
                 t = vr("rt")()
-                time.sleep(0.05)
+                while not (k[0] or k[1] or t):
+                    k = vr("rk")()
+                    t = vr("rt")()
+                    time.sleep(0.05)
+            except KeyboardInterrupt:
+                vr("quit_twm", True)
 
 
 vr("setm", setm)
