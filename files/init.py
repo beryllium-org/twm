@@ -918,6 +918,11 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                 if vr("check_timers")():
                     retry = True
                     break
+                vr("j").move(y=1, x=vr("c").size[0] - 4)
+                vr("j").nwrite(" " * 4)
+                cpstr = vr("pstr")()
+                vr("j").move(y=1, x=vr("c").size[0] - len(cpstr))
+                vr("j").nwrite(cpstr)
                 if sel != oldsel:
                     selp = (sel * dashes) // (iteml - 1)
                     oldsel = sel
