@@ -12,8 +12,10 @@ file settings.py /bin/twm/settings.py
 file main.py /bin/twm/main.py
 file unload_kb.py /bin/twm/unload_kb.py
 file flash.py /bin/twm/flash.py
+file snake.py /bin/twm/snake.py
 folder /usr/share/sounds
 file twm_alarm.wav /usr/share/sounds/twm_alarm.wav
 file twm_notification.wav /usr/share/sounds/twm_notification.wav
 file twm_timer.wav /usr/share/sounds/twm_timer.wav
 file twm_flashlight.desktop /usr/share/applications/twm_flashlight.desktop
+file twm_snake.desktop /usr/share/applications/twm_snake.desktop

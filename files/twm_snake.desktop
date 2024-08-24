@@ -1,0 +1,4 @@
+name = "Snake"
+desc = "The classic snake game."
+exec = "/bin/twm/snake.py"
+run_mode = "WM"

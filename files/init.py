@@ -1350,22 +1350,34 @@ vr("j").move(y=12, x=25)
 vr("j").nwrite("|")
 vr("refr")()
 
-vr("tg", vr("displayio").TileGrid(vr("dbit"), pixel_shader=vr("pal")))
-vr("draw_group", vr("displayio").Group())
-vra("draw_group", vr("tg"))
-
-vr("j").move(y=12, x=26)
-vr("j").nwrite("|")
-vr("refr")()
+vr("tg", None)
+vr("draw_group", None)
 
 
-def drawmode() -> None:
+def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
     vr("c").disable()
     vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+    vr(
+        "tg",
+        vr("displayio").TileGrid(
+            vr("dbit"),
+            pixel_shader=vr("pal"),
+            width=width,
+            height=height,
+            tile_width=tile_width,
+            tile_height=tile_height,
+        ),
+    )
+    # vr("draw_group", vr("displayio").Group(scale=2))
+    vr("draw_group", vr("displayio").Group())
+    vra("draw_group", vr("tg"))
     vr("d").root_group = vr("draw_group")
 
 
 def textmode() -> None:
+    if vr("tg") is not None:
+        vr("tg", None)
+        vr("draw_group", None)
     vr("d").root_group = None
     vr("c").enable()
     vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
@@ -1375,8 +1387,10 @@ vr("drawmode", drawmode)
 vr("textmode", textmode)
 del drawmode, textmode
 
-vr("j").move(y=12, x=27)
-vr("j").nwrite("|")
+be.code_cache.clear()
+
+vr("j").move(y=12, x=26)
+vr("j").nwrite("||")
 vr("refr")()
 
 vrp("ok")
