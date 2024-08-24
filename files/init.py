@@ -1018,12 +1018,13 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
 
 
 def appm() -> None:
-    apps_k = ["Main menu"]
     vr("ok", 0)
     be.api.subscript("/bin/stringproccessing/appmenul.py")
     if not vr("ok"):
         raise OSError("COULD NOT PARSE APPLICATIONS")
-    apps_k += vr("apps").keys()
+    apps_k = list(vr("apps").keys())
+    apps_k.sort()
+    apps_k.insert(0, "Main menu")
     prev = 0
     while True:
         sel = vr("dmenu")("Apps", apps_k, preselect=prev)
