@@ -11,7 +11,9 @@ file load_kb.py /bin/twm/load_kb.py
 file settings.py /bin/twm/settings.py
 file main.py /bin/twm/main.py
 file unload_kb.py /bin/twm/unload_kb.py
+file flash.py /bin/twm/flash.py
 folder /usr/share/sounds
 file twm_alarm.wav /usr/share/sounds/twm_alarm.wav
 file twm_notification.wav /usr/share/sounds/twm_notification.wav
 file twm_timer.wav /usr/share/sounds/twm_timer.wav
+file twm_flashlight.desktop /usr/share/applications/twm_flashlight.desktop

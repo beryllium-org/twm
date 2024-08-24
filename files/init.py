@@ -198,6 +198,15 @@ def waitc() -> None:
         time.sleep(0.02)
 
 
+def wany() -> None:
+    k = vr("rk")()
+    t = vr("rt")()
+    while not (k[0] or k[1] or t):
+        k = vr("rk")()
+        t = vr("rt")()
+        time.sleep(0.05)
+
+
 def lc() -> None:
     vr("j").nwrite("\r\033[K")
 
@@ -1009,20 +1018,52 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
 
 
 def appm() -> None:
-    apps_lst = be.api.fs.listdir("/usr/share/applications")
     apps_k = ["Main menu"]
-    for i in range(len(apps_lst)):
-        apps_k.append(apps_lst[i][0])
+    vr("ok", 0)
+    be.api.subscript("/bin/stringproccessing/appmenul.py")
+    if not vr("ok"):
+        raise OSError("COULD NOT PARSE APPLICATIONS")
+    apps_k += vr("apps").keys()
+    prev = 0
     while True:
-        sel = vr("dmenu")(
-            "Apps",
-            apps_k,
-        )
+        sel = vr("dmenu")("Apps", apps_k, preselect=prev)
         if sel in [-1, 0]:
             break
         else:
-            pass  # not yet implemented
-            # be.based.command.fpexec("/usr/share/applications/")
+            prev = sel
+            desc = vr("apps")[apps_k[sel]][0]
+            exef = vr("apps")[apps_k[sel]][1]
+            mode = vr("apps")[apps_k[sel]][2]
+            if exef is None or mode is None:
+                vr("j").clear()
+                vr("player").play(vr("s_no"))
+                vr("vibr")(vr("err_seq"))
+                vr("j").nwrite("Invalid application!")
+                vr("refr")()
+                time.sleep(3)
+            else:
+                if mode == "python":
+                    vr("j").clear()
+                    vr("j").nwrite("Running python application..")
+                    vr("refr")()
+                    be.based.command.fpexec(exef)
+                elif mode == "wm":
+                    vr("j").clear()
+                    vr("refr")()
+                    be.api.subscript(exef)
+                elif mode == "shell":
+                    vr("j").clear()
+                    vr("j").nwrite("Running shell application..")
+                    vr("refr")()
+                    be.based.run(exef)
+                else:
+                    vr("j").clear()
+                    vr("player").play(vr("s_no"))
+                    vr("vibr")(vr("err_seq"))
+                    vr("j").nwrite("Unknown execution mode!")
+                    vr("refr")()
+                    time.sleep(3)
+    vrd("apps")
 
 
 vr("j").move(y=12, x=22)
@@ -1145,6 +1186,7 @@ vr("last_accel", ra())
 vr("moved", moved)
 vr("ctop", ctop)
 vr("waitc", waitc)
+vr("wany", wany)
 vr("lc", lc)
 vr("tix", 0)
 vr("pstr", pstr)
@@ -1176,6 +1218,7 @@ del (
     moved,
     ctop,
     waitc,
+    wany,
     lc,
     pstr,
     bati,
@@ -1202,7 +1245,137 @@ del (
 )
 
 vr("j").move(y=12, x=24)
-vr("j").nwrite("||||")
+vr("j").nwrite("|")
+vr("refr")()
+
+import displayio
+
+vr("displayio", displayio)
+del displayio
+
+vr("dbit", vr("displayio").Bitmap(vr("d").width, vr("d").height, 256))
+vr("pal", vr("displayio").Palette(256))
+
+# Populate the palette with ANSI colors
+for pv[get_pid()]["i"] in range(256):
+    if vr("i") < 16:
+        # Standard colors (0-15)
+        if vr("i") == 0:
+            vr("red", 0x00)
+            vr("green", 0x00)
+            vr("blue", 0x00)
+        elif vr("i") == 1:
+            vr("red", 0x80)
+            vr("green", 0x00)
+            vr("blue", 0x00)
+        elif vr("i") == 2:
+            vr("red", 0x00)
+            vr("green", 0x80)
+            vr("blue", 0x00)
+        elif vr("i") == 3:
+            vr("red", 0x80)
+            vr("green", 0x80)
+            vr("blue", 0x00)
+        elif vr("i") == 4:
+            vr("red", 0x00)
+            vr("green", 0x00)
+            vr("blue", 0x80)
+        elif vr("i") == 5:
+            vr("red", 0x80)
+            vr("green", 0x00)
+            vr("blue", 0x80)
+        elif vr("i") == 6:
+            vr("red", 0x00)
+            vr("green", 0x80)
+            vr("blue", 0x80)
+        elif vr("i") == 7:
+            vr("red", 0xC0)
+            vr("green", 0xC0)
+            vr("blue", 0xC0)
+        elif vr("i") == 8:
+            vr("red", 0x80)
+            vr("green", 0x80)
+            vr("blue", 0x80)
+        elif vr("i") == 9:
+            vr("red", 0xFF)
+            vr("green", 0x00)
+            vr("blue", 0x00)
+        elif vr("i") == 10:
+            vr("red", 0x00)
+            vr("green", 0xFF)
+            vr("blue", 0x00)
+        elif vr("i") == 11:
+            vr("red", 0xFF)
+            vr("green", 0xFF)
+            vr("blue", 0x00)
+        elif vr("i") == 12:
+            vr("red", 0x00)
+            vr("green", 0x00)
+            vr("blue", 0xFF)
+        elif vr("i") == 13:
+            vr("red", 0xFF)
+            vr("green", 0x00)
+            vr("blue", 0xFF)
+        elif vr("i") == 14:
+            vr("red", 0x00)
+            vr("green", 0xFF)
+            vr("blue", 0xFF)
+        elif vr("i") == 15:
+            vr("red", 0xFF)
+            vr("green", 0xFF)
+            vr("blue", 0xFF)
+    elif vr("i") < 232:
+        # 6x6x6 color cube (16-231)
+        vr("code", vr("i") - 16)
+        vr("red", (vr("code") // 36) * 51)
+        vr("green", ((vr("code") // 6) % 6) * 51)
+        vr("blue", (vr("code") % 6) * 51)
+    else:
+        # Grayscale colors (232-255)
+        vr("gray", (vr("i") - 232) * 10 + 8)
+        vr("blue", vr("gray"))
+        vr("green", vr("blue"))
+        vr("red", vr("green"))
+    vr("pal")[vr("i")] = (vr("red") << 16) | (vr("green") << 8) | vr("blue")
+
+vrd("red")
+vrd("green")
+vrd("blue")
+vrd("code")
+vrd("gray")
+vrd("i")
+
+vr("j").move(y=12, x=25)
+vr("j").nwrite("|")
+vr("refr")()
+
+vr("tg", vr("displayio").TileGrid(vr("dbit"), pixel_shader=vr("pal")))
+vr("draw_group", vr("displayio").Group())
+vra("draw_group", vr("tg"))
+
+vr("j").move(y=12, x=26)
+vr("j").nwrite("|")
+vr("refr")()
+
+
+def drawmode() -> None:
+    vr("c").disable()
+    vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+    vr("d").root_group = vr("draw_group")
+
+
+def textmode() -> None:
+    vr("d").root_group = None
+    vr("c").enable()
+    vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+
+
+vr("drawmode", drawmode)
+vr("textmode", textmode)
+del drawmode, textmode
+
+vr("j").move(y=12, x=27)
+vr("j").nwrite("|")
 vr("refr")()
 
 vrp("ok")

@@ -1,0 +1,4 @@
+name = "Flashlight"
+desc = "A flashlight app."
+exec = "/bin/twm/flash.py"
+run_mode = "WM"

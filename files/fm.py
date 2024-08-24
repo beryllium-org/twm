@@ -1,12 +1,3 @@
-def wany() -> None:
-    k = vr("rk")()
-    t = vr("rt")()
-    while not (k[0] or k[1] or t):
-        k = vr("rk")()
-        t = vr("rt")()
-        time.sleep(0.05)
-
-
 def fselm(filen) -> None:
     prev = 0
     while True:
@@ -325,11 +316,9 @@ def filem() -> None:
 
 
 vr("confsel", confsel)
-vr("wany", wany)
 vr("fselm", fselm)
 vr("filem", filem)
-del confsel, wany, fselm, filem
+del confsel, fselm, filem
 vr("filem")()
-vrd("wany")
 vrd("fselm")
 vrd("filem")
