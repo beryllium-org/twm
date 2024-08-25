@@ -814,10 +814,27 @@ def save_all() -> None:
     try:
         remount("/", False)
         cht = vr("chain")
-        vr("chain", stringify_chain(vr("chain")))
-        for i in ["hearts", "apple_power", "chain", "next_move", "prev_move"]:
+        apt = vr("apples")
+        vr("j").clear()
+        vr("j").nwrite("Saving.")
+        vr("refr")()
+        vr("chain", vr("stringify_chain")(vr("chain")))
+        vr("apples", vr("stringify_apples")(vr("apples")))
+        for i in [
+            "apples",
+            "hearts",
+            "apple_power",
+            "chain",
+            "next_move",
+            "prev_move",
+            "score",
+            "level",
+        ]:
             cptoml.put(i, vr(i), "SNAKE")
+            vr("j").nwrite(".")
+            vr("refr")()
         vr("chain", cht)
+        vr("apples", apt)
         remount("/", True)
     except RuntimeError:
         dm = vr("dm")
