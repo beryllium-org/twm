@@ -1,6 +1,8 @@
 vr("d", be.devices["DISPLAY"][0])
 vr("d").auto_refresh = False
+vr("dm", "text")
 vr("c", pv[0]["consoles"]["ttyDISPLAY0"])
+vr("c").display = vr("d")
 vr("j", jcurses())
 vr("j").console = vr("c")
 vr("c").enable()
@@ -1355,7 +1357,8 @@ vr("draw_group", None)
 
 
 def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
-    vr("c").disable()
+    if vr("dm") in ["text", "dual"]:
+        vr("c").disable()
     vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
     vr(
         "tg",
@@ -1372,19 +1375,49 @@ def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
     vr("draw_group", vr("displayio").Group())
     vra("draw_group", vr("tg"))
     vr("d").root_group = vr("draw_group")
+    vr("dm", "draw")
 
 
 def textmode() -> None:
-    if vr("tg") is not None:
-        vr("tg", None)
-        vr("draw_group", None)
-    vr("d").root_group = None
-    vr("c").enable()
-    vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+    if vr("dm") == "dual":
+        vr("c").disable()
+        vr("c").display = vr("d")
+    if vr("dm") in ["draw", "dual"]:
+        if vr("tg") is not None:
+            vr("tg", None)
+            vr("draw_group", None)
+        vr("d").root_group = None
+        vr("c").enable()
+        vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+    vr("dm", "text")
+
+
+def dualmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
+    if vr("dm") == "draw":
+        vr("textmode")()
+    if vr("dm") == "text":
+        vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
+        vr(
+            "tg",
+            vr("displayio").TileGrid(
+                vr("dbit"),
+                pixel_shader=vr("pal"),
+                width=width,
+                height=height,
+                tile_width=tile_width,
+                tile_height=tile_height,
+            ),
+        )
+        vr("draw_group", vr("displayio").Group())
+        vra("draw_group", vr("tg"))
+        vra("draw_group", vr("d").root_group.pop())
+        vr("d").root_group = vr("draw_group")
+    vr("dm", "dual")
 
 
 vr("drawmode", drawmode)
 vr("textmode", textmode)
+vr("dualmode", dualmode)
 del drawmode, textmode
 
 be.code_cache.clear()
