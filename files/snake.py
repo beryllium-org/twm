@@ -512,6 +512,7 @@ def hscore(nscore: int = None) -> None:
     hstr = ""
     for i in range(5):
         hstr += str(h[i]) + "|"
+    hstr = hstr[:-1]
     print(hstr)
     try:
         remount("/", False)
@@ -791,7 +792,7 @@ vr("snk_start", snk_start)
 del snk_start
 
 
-def snk_end() -> None:
+def snk_end(msg="Saving") -> None:
     vr("textmode")()
     if not vr("hearts"):
         # Reset to new game
@@ -803,20 +804,20 @@ def snk_end() -> None:
         vr("hscore")(vr("score"))
         vr("score", 0)
         vr("level", 1)
-    vr("save_all")()
+    vr("save_all")(msg)
 
 
 vr("snk_end", snk_end)
 del snk_end
 
 
-def save_all() -> None:
+def save_all(msg: str) -> None:
     try:
         remount("/", False)
         cht = vr("chain")
         apt = vr("apples")
         vr("j").clear()
-        vr("j").nwrite("Saving.")
+        vr("j").nwrite(msg + ".")
         vr("refr")()
         vr("chain", vr("stringify_chain")(vr("chain")))
         vr("apples", vr("stringify_apples")(vr("apples")))
