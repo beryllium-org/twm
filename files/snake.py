@@ -414,6 +414,8 @@ def snk_home() -> None:
                     vr("snk_quit", True)
                     vr("quit_twm", True)
                     break
+
+        vr("save_all")("Saving")
     except KeyboardInterrupt:
         vr("textmode")()
         vr("quit_twm", True)
@@ -742,6 +744,9 @@ def snk_start() -> list:
                         vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
                         vr("next_move", 0)
                         vr("prev_move", 0)
+                        vr("apples", apples)
+                        vr("score", score)
+                        vr("level", level)
                     break
                 elif snake[0] in apples:
                     apples.remove(snake[0])
@@ -804,7 +809,6 @@ def snk_end(msg="Saving") -> None:
         vr("hscore")(vr("score"))
         vr("score", 0)
         vr("level", 1)
-    vr("save_all")(msg)
 
 
 vr("snk_end", snk_end)
