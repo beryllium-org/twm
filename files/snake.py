@@ -397,6 +397,13 @@ def snk_home() -> None:
             vr("j").nwrite("4. " + (str(hscr[3]) if hscr[3] else ""))
             vr("j").move(y=8, x=(vr("c").size[0] // 2) - 5)
             vr("j").nwrite("5. " + (str(hscr[4]) if hscr[4] else ""))
+            if vr("score"):
+                vr("j").move(y=10, x=8)
+                vr("j").nwrite("Current: " + str(vr("score")))
+                vr("j").move(y=11, x=9)
+                vr("j").nwrite("Length: " + str(len(vr("chain"))))
+                vr("j").move(y=12, x=9)
+                vr("j").nwrite("Health: " + str(vr("hearts")))
             vr("refr")()
             vr("waitc")()
 
@@ -515,7 +522,6 @@ def hscore(nscore: int = None) -> None:
     for i in range(5):
         hstr += str(h[i]) + "|"
     hstr = hstr[:-1]
-    print(hstr)
     try:
         remount("/", False)
         cptoml.put("hscores", hstr, "SNAKE")
@@ -540,7 +546,6 @@ def snk_start() -> list:
     score = vr("score")
     level = vr("level")
 
-    vr("waitc")()
     vr("ctop")(
         "Score: "
         + (" " * (5 - len(str(score))))
@@ -580,6 +585,7 @@ def snk_start() -> list:
     vr("refr")()
     game_ok = True
     pause = False
+    vr("waitc")()
     while game_ok:
         while pause:
             k = vr("rk")()
@@ -744,7 +750,6 @@ def snk_start() -> list:
                         vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
                         vr("next_move", 0)
                         vr("prev_move", 0)
-                        vr("apples", apples)
                         vr("score", score)
                         vr("level", level)
                     break
