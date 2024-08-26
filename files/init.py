@@ -345,12 +345,17 @@ def fselect(frompath: str = "/home/board"):
 
 def check_timers() -> bool:
     if vr("r").alarm_status:
-        vr("ring_alarm")()
         return True
     if vr("timer") is not None and vr("timer") < time.monotonic():
-        vr("ring_timer")()
         return True
     return False
+
+
+def treat_timers() -> None:
+    if vr("r").alarm_status:
+        vr("ring_alarm")()
+    if vr("timer") is not None and vr("timer") < time.monotonic():
+        vr("ring_timer")()
 
 
 def bati() -> None:
@@ -617,6 +622,7 @@ def lm(start_locked: bool = False) -> None:
         try:
             while True:
                 if vr("check_timers")():
+                    vr("treat_timers")()
                     retry = True
                     break
                 if not vr("lowpow"):
@@ -655,12 +661,12 @@ def lm(start_locked: bool = False) -> None:
                         lm = time.monotonic()
                         time.sleep(0.2)
                     else:
-                        time.sleep(0.5)
+                        time.sleep(0.8)
                 if vr("d").brightness:
                     vr("clocker")()
                 if vr("updi")():
                     lm = time.monotonic()
-                    lp = time.monotonic()
+                    lp = lm
                 t = vr("rk")()
                 if t[1] and not vr("lowpow"):
                     vr("quit_twm", True)
@@ -815,6 +821,7 @@ def dmenu(
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
+                    vr("treat_timers")()
                     retry = True
                     break
                 vr("j").move(y=1, x=vr("c").size[0] - 4)
@@ -927,6 +934,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
         try:
             while not vr("quit_twm"):
                 if vr("check_timers")():
+                    vr("treat_timers")()
                     retry = True
                     break
                 vr("j").move(y=1, x=vr("c").size[0] - 4)
@@ -1198,6 +1206,7 @@ vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
 vr("fselect", fselect)
 vr("check_timers", check_timers)
+vr("treat_timers", treat_timers)
 vr("updi", updi)
 vr("clocker", clocker)
 vr("suspend", suspend)
@@ -1229,6 +1238,7 @@ del (
     ring_timer,
     fselect,
     check_timers,
+    treat_timers,
     updi,
     clocker,
     suspend,

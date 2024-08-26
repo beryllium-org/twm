@@ -126,6 +126,7 @@ def stopw() -> None:
         try:
             while True:
                 if vr("check_timers")():
+                    vr("treat_timers")()
                     retry = True
                     break
                 t = vr("rt")()

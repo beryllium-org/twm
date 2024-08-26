@@ -110,6 +110,7 @@ def ftimer() -> None:
             while not vr("quit_twm"):
                 if vr("check_timers")():
                     retry = True
+                    vr("treat_timers")()
                     break
                 lt = time.monotonic()
                 vr("remt")()

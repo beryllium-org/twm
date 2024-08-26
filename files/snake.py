@@ -458,6 +458,9 @@ def snk_home() -> None:
             while True:
                 t = vr("rt")()
                 k = vr("rk")()
+                if vr("check_timers")():
+                    vr("treat_timers")()
+                    break
                 if t:
                     vr("snk_start")()
                     vr("snk_end")()
@@ -662,13 +665,25 @@ def snk_start() -> list:
         vr("tg")[apples[i][0], apples[i][1]] = 17
 
     direct = next_move in [2, 3]  # False up/down, True left right
+    vr("j").move(y=1, x=vr("c").size[0] - 4)
+    vr("j").nwrite(" " * 4)
+    cpstr = vr("pstr")()
+    vr("j").move(y=1, x=vr("c").size[0] - len(cpstr))
+    vr("j").nwrite(cpstr)
     vr("refr")()
     game_ok = True
     pause = False
     ts = False
     vr("waitc")()
     while game_ok:
+        vr("j").move(y=1, x=vr("c").size[0] - 4)
+        vr("j").nwrite(" " * 4)
+        cpstr = vr("pstr")()
+        vr("j").move(y=1, x=vr("c").size[0] - len(cpstr))
+        vr("j").nwrite(cpstr)
         while pause:
+            if vr("check_timers")():
+                break
             k = vr("rk")()
             if k[0]:
                 pause = False
@@ -688,6 +703,17 @@ def snk_start() -> list:
                 vr("score", score)
                 vr("level", level)
                 break
+        if vr("check_timers")():
+            game_ok = False
+            vr("hearts", hearts)
+            vr("apple_power", apple_power)
+            vr("apples", apples)
+            vr("encode_snake")(snake)
+            vr("next_move", next_move)
+            vr("prev_move", prev_move)
+            vr("score", score)
+            vr("level", level)
+            break
         tickt = (
             time.monotonic() + 0.6 - (((level // 5) - 1) * 0.05)
         )  # Time till next move
