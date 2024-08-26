@@ -326,6 +326,17 @@ vr("decode_apples", decode_apples)
 del decode_apples
 
 
+def vlevel(lvl: int) -> str:
+    return str("(" + str(lvl // 5) + ":" + str(lvl % 5) + ")")
+
+
+vr("vlevel", vlevel)
+del vlevel
+
+
+vr("snakedef", [[8, 7, 2], [9, 7, 6], [10, 7, 8]])
+
+
 # TTY menu screen
 def snk_home() -> None:
     loaded = False
@@ -335,7 +346,7 @@ def snk_home() -> None:
         loaded_score = cptoml.fetch("score", "SNAKE")
         if loaded_score is not None and loaded_score > -1:
             loaded_level = cptoml.fetch("level", "SNAKE")
-            if loaded_level is not None and loaded_level > 0:
+            if loaded_level is not None and loaded_level > -1:
                 loaded_apple_power = cptoml.fetch("apple_power", "SNAKE")
                 if loaded_apple_power is not None and loaded_apple_power > -1:
                     loaded_next_move = cptoml.fetch("next_move", "SNAKE")
@@ -375,7 +386,7 @@ def snk_home() -> None:
         vr("apple_power", 0)
         vr("next_move", 0)
         vr("prev_move", 0)
-        vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
+        vr("chain", vr("snakedef").copy())
         vr("apples", [])
 
     try:
@@ -388,18 +399,55 @@ def snk_home() -> None:
             vr("j").nwrite("Highscores")
             hscr = vr("hscore")()
             vr("j").move(y=4, x=(vr("c").size[0] // 2) - 5)
-            vr("j").nwrite("1. " + (str(hscr[0]) if hscr[0] else ""))
+            vr("j").nwrite(
+                "1. "
+                + (
+                    (str(hscr[0]) + " " + vr("vlevel")(hscr[0] // 25))
+                    if hscr[0]
+                    else ""
+                )
+            )
             vr("j").move(y=5, x=(vr("c").size[0] // 2) - 5)
-            vr("j").nwrite("2. " + (str(hscr[1]) if hscr[1] else ""))
+            vr("j").nwrite(
+                "2. "
+                + (
+                    (str(hscr[1]) + " " + vr("vlevel")(hscr[1] // 25))
+                    if hscr[1]
+                    else ""
+                )
+            )
             vr("j").move(y=6, x=(vr("c").size[0] // 2) - 5)
-            vr("j").nwrite("3. " + (str(hscr[2]) if hscr[2] else ""))
+            vr("j").nwrite(
+                "3. "
+                + (
+                    (str(hscr[2]) + " " + vr("vlevel")(hscr[2] // 25))
+                    if hscr[2]
+                    else ""
+                )
+            )
             vr("j").move(y=7, x=(vr("c").size[0] // 2) - 5)
-            vr("j").nwrite("4. " + (str(hscr[3]) if hscr[3] else ""))
+            vr("j").nwrite(
+                "4. "
+                + (
+                    (str(hscr[3]) + " " + vr("vlevel")(hscr[3] // 25))
+                    if hscr[3]
+                    else ""
+                )
+            )
             vr("j").move(y=8, x=(vr("c").size[0] // 2) - 5)
-            vr("j").nwrite("5. " + (str(hscr[4]) if hscr[4] else ""))
+            vr("j").nwrite(
+                "5. "
+                + (
+                    (str(hscr[4]) + " " + vr("vlevel")(hscr[4] // 25))
+                    if hscr[4]
+                    else ""
+                )
+            )
             if vr("score"):
                 vr("j").move(y=10, x=8)
-                vr("j").nwrite("Current: " + str(vr("score")))
+                vr("j").nwrite(
+                    "Current: " + str(vr("score")) + " " + vr("vlevel")(vr("level"))
+                )
                 vr("j").move(y=11, x=9)
                 vr("j").nwrite("Length: " + str(len(vr("chain"))))
                 vr("j").move(y=12, x=9)
@@ -546,13 +594,14 @@ def snk_start() -> list:
     score = vr("score")
     level = vr("level")
 
+    lvlstr = vr("vlevel")(level)[1:-1]
     vr("ctop")(
         "Score: "
         + (" " * (5 - len(str(score))))
         + str(score)
         + " |\nLevel: "
-        + (" " * (5 - len(str(level))))
-        + str(level)
+        + (" " * (5 - len(lvlstr)))
+        + lvlstr
         + " | HP: "
         + str(hearts)
         + " |"
@@ -567,6 +616,37 @@ def snk_start() -> list:
     for i in range(2, 16):
         for z in range(15):
             vr("tg")[z, i] = 0
+
+    ltype = level % 5
+    if ltype in [1, 2]:
+        for i in range(4, 11):
+            vr("tg")[i, 5] = 11
+            vr("tg")[i, 10] = 11
+
+    if ltype == 2:
+        for i in range(6, 10):
+            vr("tg")[4, i] = 11
+    elif ltype == 3:
+        for i in range(2, 6):
+            vr("tg")[0, i] = 11
+            vr("tg")[14, i] = 11
+            vr("tg")[0, i + 9] = 11
+            vr("tg")[14, i + 9] = 11
+            vr("tg")[i - 2, 2] = 11
+            vr("tg")[i + 9, 2] = 11
+            vr("tg")[i - 2, 14] = 11
+            vr("tg")[i + 9, 14] = 11
+    elif ltype == 4:
+        for i in range(5, 10):
+            vr("tg")[i, 3] = 11
+            vr("tg")[i, 13] = 11
+        vr("tg")[7, 2] = 11
+        vr("tg")[7, 14] = 11
+        for i in range(6, 11):
+            vr("tg")[1, i] = 11
+            vr("tg")[13, i] = 11
+        vr("tg")[0, 8] = 11
+        vr("tg")[14, 8] = 11
 
     # Load active snake chain
     for i in range(len(vr("chain"))):
@@ -585,6 +665,7 @@ def snk_start() -> list:
     vr("refr")()
     game_ok = True
     pause = False
+    ts = False
     vr("waitc")()
     while game_ok:
         while pause:
@@ -607,22 +688,30 @@ def snk_start() -> list:
                 vr("score", score)
                 vr("level", level)
                 break
-        tickt = time.monotonic() + 1 - ((level - 1) * 0.005)  # Time till next move
+        tickt = (
+            time.monotonic() + 0.6 - (((level // 5) - 1) * 0.05)
+        )  # Time till next move
         dswap = True  # Swapped directions register
         while game_ok:
             t = vr("rt")()
             k = vr("rk")()
+            ct = time.monotonic()
             if t:
-                if dswap:
-                    direct = not direct
-                    dswap = False  # Only allow swapping directions once
-                if direct:
-                    next_move = 2 if t[0]["y"] < 130 else 3
-                    # Do consider the top of the screen is black
-                    # The user will be clicking a bit off center
-                else:
-                    next_move = 0 if t[0]["x"] < 120 else 1
-            elif k[0]:
+                if not ts:
+                    ts = True
+                    if dswap:
+                        direct = not direct
+                        dswap = False  # Only allow swapping directions once
+                    if direct:
+                        next_move = 2 if t[0]["y"] < 130 else 3
+                        # Do consider the top of the screen is black
+                        # The user will be clicking a bit off center
+                    else:
+                        next_move = 0 if t[0]["x"] < 120 else 1
+            else:
+                ts = False
+
+            if k[0]:
                 pause = True
                 vr("j").move(y=1, x=16)
                 vr("j").nwrite("Hold to quit")
@@ -642,7 +731,7 @@ def snk_start() -> list:
                 vr("score", score)
                 vr("level", level)
                 break
-            if time.monotonic() >= tickt:
+            if ct >= tickt:
                 # Tail
                 if apple_power:
                     apple_power -= 1
@@ -686,12 +775,15 @@ def snk_start() -> list:
 
                 # Head
                 next_box = snake[0].copy()
+                hit = False
                 if not next_move:  # Going left
                     next_box[0] -= 1
                     if next_box[0] < 0:
                         next_box[0] = 14
                     if vr("tg")[next_box[0], next_box[1]] == 18:
                         vrp("hearts")
+                    elif vr("tg")[next_box[0], next_box[1]] == 11:
+                        hit = True
                     vr("tg")[next_box[0], next_box[1]] = 2
                     if dswap:
                         vr("tg")[snake[0][0], snake[0][1]] = 6
@@ -705,6 +797,8 @@ def snk_start() -> list:
                         next_box[0] = 0
                     if vr("tg")[next_box[0], next_box[1]] == 18:
                         vrp("hearts")
+                    elif vr("tg")[next_box[0], next_box[1]] == 11:
+                        hit = True
                     vr("tg")[next_box[0], next_box[1]] = 3
                     if dswap:
                         vr("tg")[snake[0][0], snake[0][1]] = 6
@@ -718,6 +812,8 @@ def snk_start() -> list:
                         next_box[1] = 14
                     if vr("tg")[next_box[0], next_box[1]] == 18:
                         vrp("hearts")
+                    elif vr("tg")[next_box[0], next_box[1]] == 11:
+                        hit = True
                     vr("tg")[next_box[0], next_box[1]] = 1
                     if dswap:
                         vr("tg")[snake[0][0], snake[0][1]] = 5
@@ -729,6 +825,8 @@ def snk_start() -> list:
                         next_box[1] = 2
                     if vr("tg")[next_box[0], next_box[1]] == 18:
                         vrp("hearts")
+                    elif vr("tg")[next_box[0], next_box[1]] == 11:
+                        hit = True
                     vr("tg")[next_box[0], next_box[1]] = 4
                     if dswap:
                         vr("tg")[snake[0][0], snake[0][1]] = 5
@@ -739,7 +837,11 @@ def snk_start() -> list:
                 prev_move = next_move  # Record directions
 
                 # Check collision
-                if snake[0] in snake[1:] or vr("tg")[snake[0][0], snake[0][1]] == 11:
+                if (
+                    hit
+                    or snake[0] in snake[1:]
+                    or vr("tg")[snake[0][0], snake[0][1]] == 11
+                ):
                     # Game over
                     game_ok = False
                     hearts -= 1
@@ -747,7 +849,7 @@ def snk_start() -> list:
                     # Default snake
                     if hearts:
                         vr("apple_power", 0)
-                        vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
+                        vr("chain", vr("snakedef").copy())
                         vr("next_move", 0)
                         vr("prev_move", 0)
                         vr("score", score)
@@ -763,9 +865,7 @@ def snk_start() -> list:
                         vra("apples", vr("spawn")(False))
                     if hearts < 7:
                         if int.from_bytes(vr("urandom")(1), "little") < 13:
-                            hearts_dropped.append(
-                                [vr("spawn")(True), time.monotonic() + 15]
-                            )
+                            hearts_dropped.append([vr("spawn")(True), ct + 15])
                 else:
                     for i in range(len(hearts_dropped)):
                         if snake[0] == hearts_dropped[i][0]:
@@ -789,7 +889,7 @@ def snk_start() -> list:
                     vr("score", score)
                     vr("apple_power", 0)
                     vr("apples", [])
-                    vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
+                    vr("chain", vr("snakedef").copy())
                     vr("next_move", 0)
                     vr("prev_move", 0)
                     break
@@ -807,7 +907,7 @@ def snk_end(msg="Saving") -> None:
     if not vr("hearts"):
         # Reset to new game
         vr("apple_power", 0)
-        vr("chain", [[5, 5, 2], [6, 5, 6], [7, 5, 8]])
+        vr("chain", vr("snakedef").copy())
         vr("next_move", 0)
         vr("prev_move", 0)
         vr("hearts", 3)
