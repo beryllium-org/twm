@@ -130,7 +130,8 @@ vr("j").nwrite("|")
 vr("refr")()
 
 vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
-vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM") + 1) * 0.001)
+vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.001)
+vr("reset_standby", False)
 vr("chmaxt", None)
 vr("p")._aldo4_voltage_setpoint = 0
 vr("timer", None)
@@ -318,6 +319,8 @@ def suspend() -> None:
     vr("p")._bldo2_voltage_setpoint = 0
     vr("p")._dldo1_voltage_setpoint = 0
     vr("p")._dldo1_voltage_setpoint = 0
+    if not vr("susbri"):
+        vr("p")._aldo2_voltage_setpoint = 0
     cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
 
 
@@ -490,7 +493,7 @@ def pstr() -> str:
     return (str(vr("b").percentage) + "%") if vr("bcon") else "N/A"
 
 
-def updi(force=False) -> bool:
+def updi(force=False) -> None:
     need_refr = False
     res = False
     tst = vr("b").status
@@ -532,10 +535,10 @@ def updi(force=False) -> bool:
         vr("refr")()
 
     if res:
+        vr("reset_standby", True)
         if vr("lowpow"):
             vr("resume")()
         vr("vibr")(vr("confirm_bop_seq"))
-    return res
 
 
 def str_rotate(string: str, n: int) -> str:
@@ -654,7 +657,7 @@ def lm(start_locked: bool = False) -> None:
                                 vr("d").brightness = 0
                                 vr("p")._aldo2_voltage_setpoint = 0
                         time.sleep(0.2)
-                    elif vr("moved")() or vr("rt")():
+                    elif vr("susbri") and (vr("moved")() or vr("rt")()):
                         vr("d").brightness = vr("susbri")
                         if not vr("p")._aldo2_voltage_setpoint:
                             vr("p")._aldo2_voltage_setpoint = 3300
@@ -664,7 +667,9 @@ def lm(start_locked: bool = False) -> None:
                         time.sleep(0.8)
                 if vr("d").brightness:
                     vr("clocker")()
-                if vr("updi")():
+                vr("updi")()
+                if vr("reset_standby"):
+                    vr("reset_standby", False)
                     lm = time.monotonic()
                     lp = lm
                 t = vr("rk")()
@@ -911,6 +916,7 @@ vr("refr")()
 def slidemenu(title: str, data: list, preselect=0) -> int:
     retry = True
     sel = preselect
+    need_refr = True
     while retry and not vr("quit_twm"):
         timeout = time.monotonic()
         retry = False
@@ -966,7 +972,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                         y=6, x=(vr("c").size[0] // 2 - len(data[sel]) // 2 + 1)
                     )
                     vr("j").nwrite(data[sel])
-                    vr("refr")()
+                    need_refr = True
                 if db:
                     seq = vr("bop_seq")
                     if db == 2:
@@ -1014,6 +1020,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                             sel = ((x - 5) * iteml) // 230
                             if sel != oldsel:
                                 db = 3
+                                need_refr = True
                 elif time.monotonic() - timeout > 10:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05
@@ -1022,6 +1029,10 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                         vr("lm")(True)
                         retry = True
                         break
+
+                if need_refr:
+                    need_refr = False
+                    vr("refr")()
         except KeyboardInterrupt:
             vr("quit_twm", True)
     return -1

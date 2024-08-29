@@ -60,13 +60,14 @@ def setm() -> None:
             plist = []
             start = 0.001
             stop = 0.021
+            plist.append("Disable AOD")
             for i in [start + 0.001 * x for x in range(int((stop - start) / 0.001))]:
                 plist.append(str(i))
             sel = vr("slidemenu")(
-                "Brightness", plist, preselect=int(vr("susbri") / 0.001) - 1
+                "Brightness", plist, preselect=int(vr("susbri") / 0.001)
             )
             if sel != -1:
-                newbri = (sel + 1) * 0.001
+                newbri = (sel) * 0.001
                 vr("susbri", newbri)
                 try:
                     remount("/", False)
