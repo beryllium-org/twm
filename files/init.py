@@ -48,6 +48,9 @@ vrd("lmid")
 vr("refr")()
 
 vr("p", be.devices["AXP2101"][0])
+vr("p")._bldo2_voltage_setpoint = 3300
+vr("p")._aldo2_voltage_setpoint = 3300
+vr("p")._dldo1_voltage_setpoint = 3300
 vr("t", be.devices["ftouch"][0])
 vr("b", be.devices["bat"][0])
 vr("a", be.devices["BMA423"][0])
