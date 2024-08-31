@@ -3,7 +3,7 @@ def fselm(filen) -> None:
     while True:
         ap = vr("player").playing
         sel = vr("dmenu")(
-            "File selected | " + filen[0][:22],
+            "File selected | " + filen[0][:17],
             [
                 "File info",
                 "View as text",
@@ -197,7 +197,7 @@ def fselm(filen) -> None:
 def confsel(filen) -> None:
     while True:
         sel = vr("dmenu")(
-            "File selected | " + filen[0][:22],
+            "File selected | " + filen[0][:17],
             [
                 "File info",
                 "View as text",
@@ -271,7 +271,7 @@ def filem() -> None:
         notr = getcwd() != "/"
         fl = ["d | .."] if notr else []
         for i in range(len(listing)):
-            fl.append(listing[i][1] + " | " + listing[i][0])
+            fl.append(listing[i][1] + " | " + listing[i][0][:27])
         cwdn = be.api.fs.resolve()
         remsps = 32
         if len(cwdn) > remsps:
@@ -280,7 +280,7 @@ def filem() -> None:
             "File "
             + ("Manager" if vr("selector") is None else "Picker")
             + " | In: "
-            + cwdn,
+            + cwdn[:14],
             fl,
             preselect=sel,
         )
