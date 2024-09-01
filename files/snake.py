@@ -1,5 +1,6 @@
 vr("snk_quit", False)
 vr("dbit").fill(36)  # W95-wallpaper-like lime green as our background
+vr("snk_played", False)
 
 # Tiles (good luck debugging):
 # 0:  Background
@@ -310,10 +311,6 @@ def decode_chain(chain: str):
         return None
 
 
-vr("decode_chain", decode_chain)
-del decode_chain
-
-
 def decode_apples(apples: str):
     try:
         integers = [int(num) for num in apples.split("|")]
@@ -322,16 +319,8 @@ def decode_apples(apples: str):
         return None
 
 
-vr("decode_apples", decode_apples)
-del decode_apples
-
-
 def vlevel(lvl: int) -> str:
     return str("(" + str(lvl // 5) + ":" + str(lvl % 5) + ")")
-
-
-vr("vlevel", vlevel)
-del vlevel
 
 
 vr("snakedef", [[8, 7, 2], [9, 7, 6], [10, 7, 8]])
@@ -489,10 +478,6 @@ def encode_snake(snake: list) -> None:
         vra("chain", [snake[i][0], snake[i][1], vr("tg")[snake[i][0], snake[i][1]]])
 
 
-vr("encode_snake", encode_snake)
-del encode_snake
-
-
 def stringify_chain(chain: list) -> str:
     res = ""
     for i in range(len(chain)):
@@ -500,19 +485,11 @@ def stringify_chain(chain: list) -> str:
     return res[:-1]
 
 
-vr("stringify_chain", stringify_chain)
-del stringify_chain
-
-
 def stringify_apples(apples: list) -> str:
     res = ""
     for i in range(len(apples)):
         res += str(apples[i][0]) + "|" + str(apples[i][1]) + "|"
     return res[:-1]
-
-
-vr("stringify_apples", stringify_apples)
-del stringify_apples
 
 
 from os import urandom
@@ -533,20 +510,12 @@ def get_rand_empty() -> list:
             return [x, y]
 
 
-vr("get_rand_empty", get_rand_empty)
-del get_rand_empty
-
-
 def spawn(item: bool) -> list:
     # False apple
     # True heart
     randm = vr("get_rand_empty")()
     vr("tg")[randm[0], randm[1]] = 18 if item else 17
     return randm
-
-
-vr("spawn", spawn)
-del spawn
 
 
 def hscore(nscore: int = None) -> None:
@@ -581,12 +550,9 @@ def hscore(nscore: int = None) -> None:
         pass
 
 
-vr("hscore", hscore)
-del hscore
-
-
 def snk_start() -> list:
     # Initial / Loaded snake array
+    vr("snk_played", True)
     snake = []
     apples = vr("apples")
     hearts_dropped = []
@@ -947,48 +913,69 @@ del snk_end
 
 
 def save_all(msg: str) -> None:
-    try:
-        remount("/", False)
-        cht = vr("chain")
-        apt = vr("apples")
-        vr("j").clear()
-        vr("j").nwrite(msg + ".")
-        vr("refr")()
-        vr("chain", vr("stringify_chain")(vr("chain")))
-        vr("apples", vr("stringify_apples")(vr("apples")))
-        for i in [
-            "apples",
-            "hearts",
-            "apple_power",
-            "chain",
-            "next_move",
-            "prev_move",
-            "score",
-            "level",
-        ]:
-            cptoml.put(i, vr(i), "SNAKE")
-            vr("j").nwrite(".")
+    if vr("snk_played"):
+        try:
+            remount("/", False)
+            cht = vr("chain")
+            apt = vr("apples")
+            vr("j").clear()
+            vr("j").nwrite(msg + ".")
             vr("refr")()
-        vr("chain", cht)
-        vr("apples", apt)
-        remount("/", True)
-    except RuntimeError:
-        dm = vr("dm")
-        if dm == "dual":
-            vr("textmode")()
-        vr("vibr")(vr("err_seq"))
-        vr("j").clear()
-        vr("j").nwrite("Could not store game state!")
-        vr("player").play(vr("s_no"))
-        vr("refr")()
-        time.sleep(3)
-        if dm == "dual":
-            vr("dualmode")(16, 16, 16, 16)
+            vr("chain", vr("stringify_chain")(vr("chain")))
+            vr("apples", vr("stringify_apples")(vr("apples")))
+            for i in [
+                "apples",
+                "hearts",
+                "apple_power",
+                "chain",
+                "next_move",
+                "prev_move",
+                "score",
+                "level",
+            ]:
+                cptoml.put(i, vr(i), "SNAKE")
+                vr("j").nwrite(".")
+                vr("refr")()
+            vr("chain", cht)
+            vr("apples", apt)
+            remount("/", True)
+        except:  # Gotten a crash once
+            dm = vr("dm")
+            if dm == "dual":
+                vr("textmode")()
+            vr("vibr")(vr("err_seq"))
+            vr("j").clear()
+            vr("j").nwrite("Could not store game state!")
+            vr("player").play(vr("s_no"))
+            vr("refr")()
+            time.sleep(3)
+            if dm == "dual":
+                vr("dualmode")(16, 16, 16, 16)
+        vr("snk_played", False)
 
 
 vr("save_all", save_all)
-del save_all
-
+vr("decode_chain", decode_chain)
+vr("decode_apples", decode_apples)
+vr("vlevel", vlevel)
+vr("encode_snake", encode_snake)
+vr("stringify_chain", stringify_chain)
+vr("stringify_apples", stringify_apples)
+vr("get_rand_empty", get_rand_empty)
+vr("spawn", spawn)
+vr("hscore", hscore)
+del (
+    decode_chain,
+    decode_apples,
+    vlevel,
+    encode_snake,
+    stringify_chain,
+    stringify_apples,
+    get_rand_empty,
+    spawn,
+    hscore,
+    save_all,
+)
 
 vr("snk_home")()
 
@@ -996,3 +983,24 @@ vrd("snk_quit")
 vrd("snk_home")
 vrd("snk_start")
 vrd("snk_end")
+vrd("snk_played")
+vrd("snakedef")
+vrd("urandom")
+vrd("decode_chain")
+vrd("decode_apples")
+vrd("vlevel")
+vrd("encode_snake")
+vrd("stringify_chain")
+vrd("stringify_apples")
+vrd("get_rand_empty")
+vrd("spawn")
+vrd("hscore")
+vrd("save_all")
+vrd("apples")
+vrd("hearts")
+vrd("apple_power")
+vrd("chain")
+vrd("next_move")
+vrd("prev_move")
+vrd("score")
+vrd("level")

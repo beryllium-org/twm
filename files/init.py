@@ -192,7 +192,7 @@ def moved() -> tuple:
 
 def ctop(data: str) -> None:
     vr("j").clear()
-    vr("j").write(data)
+    vr("j").nwrite(data)
 
 
 def waitc() -> None:

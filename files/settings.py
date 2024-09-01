@@ -22,13 +22,12 @@ def setm() -> None:
         if sel < 1:
             break
         elif sel == 1:
-            vr("j").clear()
             if be.devices["network"][0].enabled:
-                vr("j").nwrite("Disabling Wi-Fi..")
+                vr("ctop")("Disabling Wi-Fi..")
                 vr("refr")()
                 be.based.run("rfkill block wlan")
             else:
-                vr("j").nwrite("Enabling Wi-Fi..")
+                vr("ctop")("Enabling Wi-Fi..")
                 vr("refr")()
                 be.based.run("rfkill unblock wlan")
             vr("j").nwrite(" Done!")
@@ -51,8 +50,7 @@ def setm() -> None:
                     remount("/", True)
                 except RuntimeError:
                     vr("vibr")(vr("err_seq"))
-                    vr("j").clear()
-                    vr("j").nwrite("Could not write to storage!")
+                    vr("ctop")("Could not write to storage!")
                     vr("player").play(vr("s_no"))
                     vr("refr")()
                     time.sleep(3)
@@ -75,8 +73,7 @@ def setm() -> None:
                     remount("/", True)
                 except RuntimeError:
                     vr("vibr")(vr("err_seq"))
-                    vr("j").clear()
-                    vr("j").nwrite("Could not write to storage!")
+                    vr("ctop")("Could not write to storage!")
                     vr("player").play(vr("s_no"))
                     vr("refr")()
                     time.sleep(3)
@@ -88,8 +85,7 @@ def setm() -> None:
                 remount("/", True)
             except RuntimeError:
                 vr("vibr")(vr("err_seq"))
-                vr("j").clear()
-                vr("j").nwrite("Could not write to storage!")
+                vr("ctop")("Could not write to storage!")
                 vr("player").play(vr("s_no"))
                 vr("refr")()
                 time.sleep(3)
@@ -101,8 +97,7 @@ def setm() -> None:
                 remount("/", True)
             except RuntimeError:
                 vr("vibr")(vr("err_seq"))
-                vr("j").clear()
-                vr("j").nwrite("Could not write to storage!")
+                vr("ctop")("Could not write to storage!")
                 vr("player").play(vr("s_no"))
                 vr("refr")()
                 time.sleep(3)
@@ -118,8 +113,7 @@ def setm() -> None:
                     remount("/", True)
                 except RuntimeError:
                     vr("vibr")(vr("err_seq"))
-                    vr("j").clear()
-                    vr("j").nwrite("Could not write to storage!")
+                    vr("ctop")("Could not write to storage!")
                     vr("player").play(vr("s_no"))
                     vr("refr")()
                     time.sleep(3)
@@ -135,8 +129,7 @@ def setm() -> None:
                     remount("/", True)
                 except RuntimeError:
                     vr("vibr")(vr("err_seq"))
-                    vr("j").clear()
-                    vr("j").nwrite("Could not write to storage!")
+                    vr("ctop")("Could not write to storage!")
                     vr("player").play(vr("s_no"))
                     vr("refr")()
                     time.sleep(3)
@@ -152,15 +145,13 @@ def setm() -> None:
                     remount("/", True)
                 except RuntimeError:
                     vr("vibr")(vr("err_seq"))
-                    vr("j").clear()
-                    vr("j").nwrite("Could not write to storage!")
+                    vr("ctop")("Could not write to storage!")
                     vr("player").play(vr("s_no"))
                     vr("refr")()
                     time.sleep(3)
         elif sel == 9:
             vr("vibr")(vr("err_seq"))
-            vr("j").clear()
-            vr("j").nwrite("Not yet implemented!")
+            vr("ctop")("Not yet implemented!")
             vr("player").play(vr("s_no"))
             vr("refr")()
             time.sleep(1.8)
@@ -186,15 +177,8 @@ def setm() -> None:
             vr("j").move(y=19, x=9)
             vr("j").nwrite("-- Touch to go back --")
             vr("refr")()
-            try:
-                k = vr("rk")()
-                t = vr("rt")()
-                while not (k[0] or k[1] or t):
-                    k = vr("rk")()
-                    t = vr("rt")()
-                    time.sleep(0.05)
-            except KeyboardInterrupt:
-                vr("quit_twm", True)
+            vr("waitc")()
+            vr("wany")()
 
 
 vr("setm", setm)

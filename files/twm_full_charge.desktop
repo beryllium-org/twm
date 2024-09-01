@@ -1,0 +1,4 @@
+name = "Full Charge"
+desc = "A utillity to fully charge the battery cell."
+exec = "/bin/twm/full_charge.py"
+run_mode = "WM"
