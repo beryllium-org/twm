@@ -211,6 +211,8 @@ def wany() -> None:
         k = vr("rk")()
         t = vr("rt")()
         time.sleep(0.05)
+    if k[1]:
+        vr("shutdown")()
 
 
 def lc() -> None:
@@ -519,6 +521,10 @@ def updi(force=False) -> None:
     elif vr("chm") is None:
         vr("chm", "discharging")
 
+    if tst == "discharging":
+        if not vr("b").percentage:
+            vr("shutdown")()
+
     if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
         vr("j").nwrite(vr("pstr")() + " " * 3)
@@ -676,9 +682,8 @@ def lm(start_locked: bool = False) -> None:
                     lm = time.monotonic()
                     lp = lm
                 t = vr("rk")()
-                if t[1] and not vr("lowpow"):
-                    vr("quit_twm", True)
-                    return
+                if t[1]:
+                    vr("shutdown")()
                 elif t[0]:
                     if vr("lowpow"):
                         vr("resume")()
@@ -861,7 +866,7 @@ def dmenu(
                 t = vr("rt")()
                 k = vr("rk")()
                 if k[1]:
-                    vr("quit_twm", True)
+                    vr("shutdown")()
                 elif k[0]:
                     vr("lm")()
                     retry = True
@@ -987,7 +992,7 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                 t = vr("rt")()
                 k = vr("rk")()
                 if k[1]:
-                    vr("quit_twm", True)
+                    vr("shutdown")()
                 elif k[0]:
                     vr("lm")()
                     retry = True
@@ -1148,12 +1153,7 @@ def hs() -> None:
                 ],
             )
             if not sel:
-                vr("j").clear()
-                vr("j").nwrite("Shutting down.. ")
-                vr("refr")()
-                be.based.run("shutdown")
-                vr("j").nwrite("Bye!")
-                vr("refr")()
+                vr("shutdown")()
             elif sel == 1:
                 vr("j").clear()
                 vr("j").nwrite("Bye!")
@@ -1380,6 +1380,23 @@ vr("tg", None)
 vr("draw_group", None)
 
 
+def shutdown(instant=False) -> None:
+    if vr("lowpow"):
+        vr("resume")()
+    if not instant:
+        vr("ctop")("Shutting down.. ")
+        vr("refr")()
+        vr("d").brightness = vr("mainbri")
+        vr("vibr")(vr("al_seq"))
+        time.sleep(1)
+        while vr("d").brightness > 0.01:
+            vr("d").brightness -= 0.01
+            time.sleep(0.1)
+        vr("j").nwrite("Bye!")
+        vr("refr")()
+    be.based.run("shutdown")
+
+
 def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
     if vr("dm") in ["text", "dual"]:
         vr("c").disable()
@@ -1439,10 +1456,11 @@ def dualmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
     vr("dm", "dual")
 
 
+vr("shutdown", shutdown)
 vr("drawmode", drawmode)
 vr("textmode", textmode)
 vr("dualmode", dualmode)
-del drawmode, textmode
+del drawmode, textmode, dualmode, shutdown
 
 be.code_cache.clear()
 

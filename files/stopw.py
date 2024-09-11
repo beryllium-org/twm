@@ -131,6 +131,8 @@ def stopw() -> None:
                     break
                 t = vr("rt")()
                 k = vr("rk")()
+                if k[1]:
+                    vr("shutdown")()
                 lt = time.monotonic()
                 dt = (lt - rt) if st == 2 else (rt if rt is not None else 0)
                 if st == 2 or (st and vr("ldt") != dt):

@@ -229,6 +229,8 @@ def ftimer() -> None:
                     need_refr = False
                 t = vr("rt")()
                 k = vr("rk")()
+                if k[1]:
+                    vr("shutdown")()
                 if t:
                     if t[0]["y"] > 190 and lt - lk > 0.3:
                         x = t[0]["x"]
