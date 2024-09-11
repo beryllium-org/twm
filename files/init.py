@@ -58,6 +58,7 @@ vr("r", be.devices["rtc"][0])
 vr("v", be.devices["vib"][0])
 vr("r").alarm_status = False
 vr("i2s", be.devices["i2s"][0])
+vr("15flag", True)
 
 vr("j").move(y=12, x=14)
 vr("j").nwrite("|")
@@ -356,6 +357,11 @@ def check_timers() -> bool:
         return True
     if vr("timer") is not None and vr("timer") < time.monotonic():
         return True
+    if vr("b").status == "discharging":
+        if not vr("b").percentage:
+            return True
+        elif vr("15flag") and vr("b").percentage < 16:
+            return True
     return False
 
 
@@ -364,6 +370,22 @@ def treat_timers() -> None:
         vr("ring_alarm")()
     if vr("timer") is not None and vr("timer") < time.monotonic():
         vr("ring_timer")()
+    if vr("b").status == "discharging":
+        if not vr("b").percentage:
+            vr("shutdown")()
+        elif vr("15flag") and vr("b").percentage < 16:
+            vr("15flag", False)
+            vr("notifylow")()
+
+
+def notifylow() -> None:
+    if vr("lowpow"):
+        vr("resume")()
+    vr("ctop")("Low battery!")
+    vr("refr")()
+    vr("player").play(vr("s_no"))
+    vr("vibr")(vr("err_seq"))
+    time.sleep(3)
 
 
 def bati() -> None:
@@ -504,6 +526,7 @@ def updi(force=False) -> None:
     tst = vr("b").status
     if tst != "discharging":
         if vr("chm") != tst:
+            vr("15flag", True)
             if tst != "charged" and vr("chm") not in ["charged", None]:
                 res = True
             vr("chm", tst)
@@ -520,10 +543,6 @@ def updi(force=False) -> None:
         force = True
     elif vr("chm") is None:
         vr("chm", "discharging")
-
-    if tst == "discharging":
-        if not vr("b").percentage:
-            vr("shutdown")()
 
     if force or time.monotonic() - vr("batc") > 60:
         vr("j").move(y=17, x=30)
@@ -1215,6 +1234,7 @@ vr("wany", wany)
 vr("lc", lc)
 vr("tix", 0)
 vr("pstr", pstr)
+vr("notifylow", notifylow)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
@@ -1247,6 +1267,7 @@ del (
     wany,
     lc,
     pstr,
+    notifylow,
     bati,
     ring_alarm,
     ring_timer,
