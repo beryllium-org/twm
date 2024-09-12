@@ -655,6 +655,7 @@ def lm(start_locked: bool = False) -> None:
                 if vr("check_timers")():
                     vr("treat_timers")()
                     retry = True
+                    vr("chm", None)
                     break
                 if not vr("lowpow"):
                     tou = vr("rt")()
