@@ -68,6 +68,7 @@ def ftimer() -> None:
             slist.append(str(i + 1) + " hours " + str(j + 1) + " minutes")
     try:
         while retry and not vr("quit_twm"):
+            vr("sht", None)
             retry = False
             htick = -1
             vr("waitc")()
@@ -109,8 +110,8 @@ def ftimer() -> None:
             vr("remt")()
             while not vr("quit_twm"):
                 if vr("check_timers")():
-                    retry = True
                     vr("treat_timers")()
+                    retry = True
                     break
                 lt = time.monotonic()
                 vr("remt")()
@@ -235,7 +236,7 @@ def ftimer() -> None:
                     if t[0]["y"] > 190 and lt - lk > 0.3:
                         x = t[0]["x"]
                         lk = lt
-                        if x < 121:  # conigure
+                        if x < 121:  # configure
                             vr("vibr")(vr("bop_seq"))
                             sel = vr("slidemenu")(
                                 "Configure timer",
@@ -243,8 +244,7 @@ def ftimer() -> None:
                             )
                             if sel != -1:
                                 vr("timer_rem", (sel + 1) * 60)
-                            else:
-                                vr("timer_rem", None)
+                                vr("timer", None)
                             retry = True
                             break
                         elif x < 181:  # exit
@@ -256,6 +256,9 @@ def ftimer() -> None:
                                 if vr("timer") is None:
                                     vr("timer", lt + vr("timer_rem"))
                                 else:
+                                    vr("timer_rem", int(vr("timer") - lt))
+                                    if vr("timer_rem") < 1:
+                                        vr("timer_rem", None)
                                     vr("timer", None)
                             else:
                                 vr("vibr")(vr("err_seq"))
