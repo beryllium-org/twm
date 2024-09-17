@@ -331,7 +331,7 @@ def suspend() -> None:
     target = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
     if not vr("susbri"):
         vr("p")._aldo2_voltage_setpoint = 0
-        if not pv[0]["consoles"]["ttyUSB0"].connected:
+        if target == 40_000_000 and not pv[0]["consoles"]["ttyUSB0"].connected:
             target = 20_000_000
     cpu.frequency = target
 
