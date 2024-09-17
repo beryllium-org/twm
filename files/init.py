@@ -59,6 +59,9 @@ vr("v", be.devices["vib"][0])
 vr("r").alarm_status = False
 vr("i2s", be.devices["i2s"][0])
 vr("15flag", True)
+vr("10flag", True)
+vr("05flag", True)
+vr("00flag", True)
 
 vr("j").move(y=12, x=14)
 vr("j").nwrite("|")
@@ -325,9 +328,12 @@ def suspend() -> None:
     vr("p")._bldo2_voltage_setpoint = 0
     vr("p")._dldo1_voltage_setpoint = 0
     vr("p")._dldo1_voltage_setpoint = 0
+    target = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
     if not vr("susbri"):
         vr("p")._aldo2_voltage_setpoint = 0
-    cpu.frequency = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
+        if not pv[0]["consoles"]["ttyUSB0"].connected:
+            target = 20_000_000
+    cpu.frequency = target
 
 
 def resume() -> None:
@@ -362,6 +368,13 @@ def check_timers() -> bool:
             return True
         elif vr("15flag") and vr("b").percentage < 16:
             return True
+        elif vr("10flag") and vr("b").percentage < 11:
+            return True
+        elif vr("05flag") and vr("b").percentage < 6:
+            return True
+        elif vr("00flag") and not vr("b").percentage:
+            return True
+
     return False
 
 
@@ -376,12 +389,31 @@ def treat_timers() -> None:
         elif vr("15flag") and vr("b").percentage < 16:
             vr("15flag", False)
             vr("notifylow")()
+        elif vr("10flag") and vr("b").percentage < 11:
+            vr("10flag", False)
+            vr("notifylow")()
+        elif vr("05flag") and vr("b").percentage < 6:
+            vr("05flag", False)
+            vr("notifylow")()
+        elif vr("00flag") and not vr("b").percentage:
+            vr("00flag", False)
+            vr("notifycrit")()
 
 
 def notifylow() -> None:
     if vr("lowpow"):
         vr("resume")()
     vr("ctop")("Low battery!")
+    vr("refr")()
+    vr("player").play(vr("s_no"))
+    vr("vibr")(vr("err_seq"))
+    time.sleep(3)
+
+
+def notifycrit() -> None:
+    if vr("lowpow"):
+        vr("resume")()
+    vr("ctop")("Battery CRITICAL!")
     vr("refr")()
     vr("player").play(vr("s_no"))
     vr("vibr")(vr("err_seq"))
@@ -527,6 +559,9 @@ def updi(force=False) -> None:
     if tst != "discharging":
         if vr("chm") != tst:
             vr("15flag", True)
+            vr("10flag", True)
+            vr("05flag", True)
+            vr("00flag", True)
             if tst != "charged" and vr("chm") not in ["charged", None]:
                 res = True
             vr("chm", tst)
@@ -685,6 +720,8 @@ def lm(start_locked: bool = False) -> None:
                             else:
                                 vr("d").brightness = 0
                                 vr("p")._aldo2_voltage_setpoint = 0
+                                if not pv[0]["consoles"]["ttyUSB0"].connected:
+                                    cpu.frequency = 20_000_000
                         time.sleep(0.2)
                     elif vr("susbri") and (vr("moved")() or vr("rt")()):
                         vr("d").brightness = vr("susbri")
@@ -1236,6 +1273,7 @@ vr("lc", lc)
 vr("tix", 0)
 vr("pstr", pstr)
 vr("notifylow", notifylow)
+vr("notifycrit", notifycrit)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
@@ -1269,6 +1307,7 @@ del (
     lc,
     pstr,
     notifylow,
+    notifycrit,
     bati,
     ring_alarm,
     ring_timer,
