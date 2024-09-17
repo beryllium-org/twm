@@ -720,7 +720,10 @@ def lm(start_locked: bool = False) -> None:
                             else:
                                 vr("d").brightness = 0
                                 vr("p")._aldo2_voltage_setpoint = 0
-                                if not pv[0]["consoles"]["ttyUSB0"].connected:
+                                if not (
+                                    be.devices["network"][0].enabled
+                                    or pv[0]["consoles"]["ttyUSB0"].connected
+                                ):
                                     cpu.frequency = 20_000_000
                         time.sleep(0.2)
                     elif vr("susbri") and (vr("moved")() or vr("rt")()):
