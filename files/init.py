@@ -386,18 +386,28 @@ def treat_timers() -> None:
     if vr("b").status == "discharging":
         if not vr("b").percentage:
             vr("shutdown")()
-        elif vr("15flag") and vr("b").percentage < 16:
-            vr("15flag", False)
-            vr("notifylow")()
-        elif vr("10flag") and vr("b").percentage < 11:
-            vr("10flag", False)
-            vr("notifylow")()
-        elif vr("05flag") and vr("b").percentage < 6:
-            vr("05flag", False)
-            vr("notifylow")()
-        elif vr("00flag") and not vr("b").percentage:
-            vr("00flag", False)
-            vr("notifycrit")()
+        else:
+            doa = True
+            if vr("00flag") and not vr("b").percentage:
+                vr("00flag", False)
+                if doa:
+                    vr("notifycrit")()
+                    doa = False
+            if vr("05flag") and vr("b").percentage < 6:
+                vr("05flag", False)
+                if doa:
+                    vr("notifylow")()
+                    doa = False
+            if vr("10flag") and vr("b").percentage < 11:
+                vr("10flag", False)
+                if doa:
+                    vr("notifylow")()
+                    doa = False
+            if vr("15flag") and vr("b").percentage < 16:
+                vr("15flag", False)
+                if doa:
+                    vr("notifylow")()
+                    doa = False
 
 
 def notifylow() -> None:
