@@ -61,7 +61,6 @@ vr("i2s", be.devices["i2s"][0])
 vr("15flag", True)
 vr("10flag", True)
 vr("05flag", True)
-vr("00flag", True)
 
 vr("j").move(y=12, x=14)
 vr("j").nwrite("|")
@@ -372,9 +371,6 @@ def check_timers() -> bool:
             return True
         elif vr("05flag") and vr("b").percentage < 6:
             return True
-        elif vr("00flag") and not vr("b").percentage:
-            return True
-
     return False
 
 
@@ -384,46 +380,30 @@ def treat_timers() -> None:
     if vr("timer") is not None and vr("timer") < time.monotonic():
         vr("ring_timer")()
     if vr("b").status == "discharging":
+        doa = True
         if not vr("b").percentage:
             vr("shutdown")()
-        else:
-            doa = True
-            if vr("00flag") and not vr("b").percentage:
-                vr("00flag", False)
-                if doa:
-                    vr("notifycrit")()
-                    doa = False
-            if vr("05flag") and vr("b").percentage < 6:
-                vr("05flag", False)
-                if doa:
-                    vr("notifylow")()
-                    doa = False
-            if vr("10flag") and vr("b").percentage < 11:
-                vr("10flag", False)
-                if doa:
-                    vr("notifylow")()
-                    doa = False
-            if vr("15flag") and vr("b").percentage < 16:
-                vr("15flag", False)
-                if doa:
-                    vr("notifylow")()
-                    doa = False
+        if vr("05flag") and vr("b").percentage < 6:
+            vr("05flag", False)
+            if doa:
+                vr("notifylow")()
+                doa = False
+        if vr("10flag") and vr("b").percentage < 11:
+            vr("10flag", False)
+            if doa:
+                vr("notifylow")()
+                doa = False
+        if vr("15flag") and vr("b").percentage < 16:
+            vr("15flag", False)
+            if doa:
+                vr("notifylow")()
+                doa = False
 
 
 def notifylow() -> None:
     if vr("lowpow"):
         vr("resume")()
     vr("ctop")("Low battery!")
-    vr("refr")()
-    vr("player").play(vr("s_no"))
-    vr("vibr")(vr("err_seq"))
-    time.sleep(3)
-
-
-def notifycrit() -> None:
-    if vr("lowpow"):
-        vr("resume")()
-    vr("ctop")("Battery CRITICAL!")
     vr("refr")()
     vr("player").play(vr("s_no"))
     vr("vibr")(vr("err_seq"))
@@ -571,7 +551,6 @@ def updi(force=False) -> None:
             vr("15flag", True)
             vr("10flag", True)
             vr("05flag", True)
-            vr("00flag", True)
             if tst != "charged" and vr("chm") not in ["charged", None]:
                 res = True
             vr("chm", tst)
@@ -1286,7 +1265,6 @@ vr("lc", lc)
 vr("tix", 0)
 vr("pstr", pstr)
 vr("notifylow", notifylow)
-vr("notifycrit", notifycrit)
 vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
@@ -1320,7 +1298,6 @@ del (
     lc,
     pstr,
     notifylow,
-    notifycrit,
     bati,
     ring_alarm,
     ring_timer,
