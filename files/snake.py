@@ -977,7 +977,10 @@ del (
     save_all,
 )
 
-vr("snk_home")()
+try:
+    vr("snk_home")()
+except:
+    vr("textmode")()
 
 vrd("snk_quit")
 vrd("snk_home")
