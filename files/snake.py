@@ -370,7 +370,7 @@ def snk_home() -> None:
     if not loaded:
         # New game
         vr("score", 0)
-        vr("level", 1)
+        vr("level", 0)
         vr("hearts", 3)
         vr("apple_power", 0)
         vr("next_move", 0)
@@ -464,8 +464,8 @@ def snk_home() -> None:
 
         vr("save_all")("Saving")
     except KeyboardInterrupt:
-        vr("textmode")()
         vr("quit_twm", True)
+    vr("textmode")()
 
 
 vr("snk_home", snk_home)
@@ -905,7 +905,7 @@ def snk_end(msg="Saving") -> None:
         vr("hearts", 3)
         vr("hscore")(vr("score"))
         vr("score", 0)
-        vr("level", 1)
+        vr("level", 0)
 
 
 vr("snk_end", snk_end)
