@@ -1,8 +1,7 @@
 vr("d", be.devices["DISPLAY"][0])
 vr("d").auto_refresh = False
 vr("dm", "text")
-vr("c", pv[0]["consoles"]["ttyDISPLAY0"])
-vr("c").display = vr("d")
+vr("c", pv[0]["consoles"]["tty1"])
 vr("j", jcurses())
 vr("j").console = vr("c")
 vr("c").enable()
@@ -42,27 +41,20 @@ vr("j").move(y=5)
 vr("j").nwrite(
     vr("j").nwrite(" " * vr("lmid") + ("\n" + (" " * vr("lmid"))).join(vr("logo")))
 )
-vr("j").move(y=12, x=12)
+vr("j").move(y=12, x=20)
 vr("j").nwrite("<|" + (" " * 14) + ">")
 vrd("lmid")
 vr("refr")()
 
-vr("p", be.devices["AXP2101"][0])
-vr("p")._bldo2_voltage_setpoint = 3300
-vr("p")._aldo2_voltage_setpoint = 3300
-vr("p")._dldo1_voltage_setpoint = 3300
-vr("t", be.devices["ftouch"][0])
 vr("b", be.devices["bat"][0])
-vr("a", be.devices["BMA423"][0])
-vr("r", be.devices["rtc"][0])
-vr("v", be.devices["vib"][0])
-vr("r").alarm_status = False
+vr("blast", vr("b").percentage)
 vr("i2s", be.devices["i2s"][0])
+vr("t", be.devices["gtouch"][0])
 vr("15flag", True)
 vr("10flag", True)
 vr("05flag", True)
 
-vr("j").move(y=12, x=14)
+vr("j").move(y=12, x=21)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -130,26 +122,29 @@ vr("cached_ip", "")
 vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
+vr("pkst", vr("c").alt_mode)
+vr("lasttt", 0)
+vr("lastth", [])
+vr("stkey", "")
 
-vr("j").move(y=12, x=14)
+vr("j").move(y=12, x=22)
 vr("j").nwrite("|")
 vr("refr")()
 
 vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
-vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.001)
+vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.01)
 vr("reset_standby", False)
-vr("chmaxt", None)
-vr("p")._aldo4_voltage_setpoint = 0
+vr("alarm", None)
 vr("timer", None)
 vr("timer_rem", None)
-vr("bcon", vr("p").is_battery_connected)
-vr("al_seq", [vr("v").effect(16)])
-vr("bop_seq", [vr("v").effect(3)])
-vr("bop_bad_seq", [vr("v").effect(1)])
-vr("clk_seq", [vr("v").effect(26)])
-vr("confirm_bop_seq", [vr("v").effect(13)])
-vr("err_seq", [vr("v").effect(47), vr("v").pause(0.3), vr("v").effect(47)])
-vr("vibrate", cptoml.fetch("vibration", subtable="TWM") == True)
+
+vr("al_seq", None)
+vr("bop_seq", None)
+vr("bop_bad_seq", None)
+vr("clk_seq", None)
+vr("confirm_bop_seq", None)
+vr("err_seq", None)
+vr("vibrate", False)
 vr("sounds", cptoml.fetch("sounds", subtable="TWM") == True)
 
 vr("s_al", cptoml.fetch("alarm_sound", subtable="TWM"))
@@ -164,33 +159,73 @@ vr("s_no", cptoml.fetch("notification_sound", subtable="TWM"))
 if not isinstance(vr("s_no"), str):
     vr("s_no", "/usr/share/sounds/twm_notification.wav")
 
-vr("j").move(y=12, x=15)
+vr("j").move(y=12, x=23)
 vr("j").nwrite("|")
 vr("refr")()
 
 
 def rk() -> tuple:
-    return vr("p").power_key_was_pressed
+    nub = vr("c").alt_mode != vr("pkst")
+    if nub:
+        vr("pkst", not vr("pkst"))
+    key = ""
+    if vr("stkey") == 10:
+        vr("stkey", False)
+        return [True, nub]
+    if vr("c").in_waiting:
+        key = vr("c").read(1)
+        vr("c").reset_input_buffer()
+    isent = key == "\n"
+    if not isent:
+        vr("stkey", key)
+    return [isent, nub]
 
 
 def rt() -> list:
-    return vr("t").touches
+    res = []
+    if time.monotonic() - vr("lasttt") > 0.02:
+        for i in vr("t").touches:
+            res.append({"x": i[1], "y": 240 - i[0], "z": i[2]})
+        vr("lastth", res)
+        vr("lasttt", time.monotonic())
+    else:
+        return vr("lastth")
+    return res
+
+
+def rj() -> str:
+    if vr("c").in_waiting:
+        k = vr("c").read(1)[0] if not vr("stkey") else vr("stkey")
+        vr("stkey", None)
+        if k == 27:
+            return vr("rj")()
+        elif k == 91:
+            return vr("rj")()
+        elif k in [23, 72]:
+            return "w"
+        elif k in [19, 70]:
+            return "s"
+        elif k in [1, 68]:
+            return "a"
+        elif k in [4, 9]:
+            return "d"
+        elif k == 17:
+            return "q"
+        elif k == 5:
+            return "e"
+        elif k == 3:
+            return "c"
+        elif k == 10:
+            vr("stkey", 10)
+    return ""
 
 
 def ra() -> tuple:
-    return vr("a").acceleration
+    return (0, 0, 0)
 
 
 def moved() -> tuple:
-    tac = vr("ra")()
-    oac = vr("last_accel")
-    vr("last_accel", tac)
-    res = (
-        abs(abs(tac[0]) - abs(oac[0])) > 0.2
-        or abs(abs(tac[1]) - abs(oac[1])) > 0.2
-        or abs(abs(tac[2]) - abs(oac[2])) > 0.2
-    )
-    return res
+    return True
 
 
 def ctop(data: str) -> None:
@@ -201,7 +236,7 @@ def ctop(data: str) -> None:
 def waitc() -> None:
     t = vr("rt")()
     k = vr("rk")()
-    while t or k[0] or k[1]:
+    while t or k[0]:
         t = vr("rt")()
         k = vr("rk")()
         time.sleep(0.02)
@@ -220,6 +255,14 @@ def wany() -> None:
 
 def lc() -> None:
     vr("j").nwrite("\r\033[K")
+
+
+def compare_time(target_time: str) -> int:
+    now = time.localtime()
+    current_minutes = now.tm_hour * 60 + now.tm_min
+    target_minutes = int(target_time[:2]) * 60 + int(target_time[2:])
+
+    return (current_minutes > target_minutes) - (current_minutes < target_minutes)
 
 
 def clocker() -> None:
@@ -256,17 +299,9 @@ def clocker() -> None:
         o = vr("months")[o - 1]
         vr("j").write(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
         vr("lc")()
-        if vr("r").alarm_interrupt:
+        if vr("alarm") is not None and vr("compare_time")(vr("alarm")) > 0:
             vr("j").nwrite("Alarm: ")
-            ahr = vr("r").alarm[0].tm_hour
-            amin = vr("r").alarm[0].tm_min
-            if vr("r").alarm[1] != "daily":
-                vr("j").nwrite(vr("days")[vr("r").alarm[0].tm_wday] + " ")
-            vr("j").nwrite(
-                (("0" + str(ahr)) if ahr < 10 else str(ahr))
-                + ":"
-                + (("0" + str(amin)) if amin < 10 else str(amin))
-            )
+            vr("j").nwrite(target_time[:2] + ":" + target_time[2:])
         hl = h
         hh = 0
         if hl > 9:
@@ -300,7 +335,7 @@ def clocker() -> None:
             vr("j").move(y=6 + i)
             vr("lc")()
             vr("j").nwrite(
-                " " * 9
+                " " * 16
                 + vr("bigs")[hh][i]
                 + vr("bigs")[hl][i]
                 + vr("bigs")[ind][i]
@@ -315,7 +350,7 @@ def clocker() -> None:
         time.sleep(0.15)
 
 
-vr("j").move(y=12, x=16)
+vr("j").move(y=12, x=24)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -324,23 +359,12 @@ def suspend() -> None:
     vr("d").brightness = vr("susbri")
     vr("force_refr", True)
     vr("lowpow", True)
-    vr("p")._bldo2_voltage_setpoint = 0
-    vr("p")._dldo1_voltage_setpoint = 0
-    vr("p")._dldo1_voltage_setpoint = 0
-    target = 80_000_000 if be.devices["network"][0].enabled else 40_000_000
-    if not vr("susbri"):
-        vr("p")._aldo2_voltage_setpoint = 0
-        if target == 40_000_000 and not pv[0]["consoles"]["ttyUSB0"].connected:
-            target = 20_000_000
-    cpu.frequency = target
+    cpu.frequency = 80_000_000
 
 
 def resume() -> None:
     cpu.frequency = 240_000_000
     vr("d").brightness = vr("mainbri")
-    vr("p")._bldo2_voltage_setpoint = 3300
-    vr("p")._aldo2_voltage_setpoint = 3300
-    vr("p")._dldo1_voltage_setpoint = 3300
     vr("lowpow", False)
     vr("force_refr", True)
     vr("updi")(True)
@@ -358,46 +382,45 @@ def fselect(frompath: str = "/home/board"):
 
 
 def check_timers() -> bool:
-    if vr("r").alarm_status:
+    if vr("alarm") is not None and vr("timer") < time.monotonic():
         return True
     if vr("timer") is not None and vr("timer") < time.monotonic():
         return True
-    if vr("b").status == "discharging":
-        if not vr("b").percentage:
-            return True
-        elif vr("15flag") and vr("b").percentage < 16:
-            return True
-        elif vr("10flag") and vr("b").percentage < 11:
-            return True
-        elif vr("05flag") and vr("b").percentage < 6:
-            return True
+    perc = vr("b").percentage
+    if not perc:
+        return True
+    elif vr("15flag") and perc < 16:
+        return True
+    elif vr("10flag") and perc < 11:
+        return True
+    elif vr("05flag") and perc < 6:
+        return True
     return False
 
 
 def treat_timers() -> None:
-    if vr("r").alarm_status:
+    if vr("alarm") is not None and vr("timer") < time.monotonic():
         vr("ring_alarm")()
     if vr("timer") is not None and vr("timer") < time.monotonic():
         vr("ring_timer")()
-    if vr("b").status == "discharging":
-        doa = True
-        if not vr("b").percentage:
-            vr("shutdown")()
-        if vr("05flag") and vr("b").percentage < 6:
-            vr("05flag", False)
-            if doa:
-                vr("notifylow")()
-                doa = False
-        if vr("10flag") and vr("b").percentage < 11:
-            vr("10flag", False)
-            if doa:
-                vr("notifylow")()
-                doa = False
-        if vr("15flag") and vr("b").percentage < 16:
-            vr("15flag", False)
-            if doa:
-                vr("notifylow")()
-                doa = False
+    doa = True
+    if not vr("b").percentage:
+        vr("shutdown")()
+    if vr("05flag") and vr("b").percentage < 6:
+        vr("05flag", False)
+        if doa:
+            vr("notifylow")()
+            doa = False
+    if vr("10flag") and vr("b").percentage < 11:
+        vr("10flag", False)
+        if doa:
+            vr("notifylow")()
+            doa = False
+    if vr("15flag") and vr("b").percentage < 16:
+        vr("15flag", False)
+        if doa:
+            vr("notifylow")()
+            doa = False
 
 
 def notifylow() -> None:
@@ -406,21 +429,7 @@ def notifylow() -> None:
     vr("ctop")("Low battery!")
     vr("refr")()
     vr("player").play(vr("s_no"))
-    vr("vibr")(vr("err_seq"))
     time.sleep(3)
-
-
-def bati() -> None:
-    if vr("b").charging_enabled:
-        if vr("b").status == "charged":
-            if vr("chmaxt") is None:
-                vr("chmaxt", None)
-            elif time.monotonic() - vr("chmaxt") > 600:
-                vr("b").charging_enabled = False
-    else:
-        if vr("b").percentage < 98:
-            vr("b").charging_enabled = True
-            vr("chmaxt", None)
 
 
 def ring_alarm() -> None:
@@ -465,7 +474,6 @@ def ring_alarm() -> None:
             lt = time.monotonic()
             if lt - rt > 2:
                 rt = lt
-                vr("vibr")(vr("al_seq"))
             k = vr("rk")()
             vr("j").move(y=4, x=2)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
@@ -511,7 +519,6 @@ def ring_timer() -> None:
             lt = time.monotonic()
             if lt - rt > 3:
                 rt = lt
-                vr("vibr")(vr("al_seq"))
             k = vr("rk")()
             vr("j").move(y=18, x=2)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
@@ -533,53 +540,34 @@ def ring_timer() -> None:
     vr("player").stop()
 
 
-vr("j").move(y=12, x=17)
+vr("j").move(y=12, x=25)
 vr("j").nwrite("|")
 vr("refr")()
 
 
 def pstr() -> str:
-    return (str(vr("b").percentage) + "%") if vr("bcon") else "N/A"
+    return (str(vr("b").percentage) + "%") if vr("b") else "N/A"
 
 
 def updi(force=False) -> None:
     need_refr = False
     res = False
-    tst = vr("b").status
-    if tst != "discharging":
-        if vr("chm") != tst:
-            vr("15flag", True)
-            vr("10flag", True)
-            vr("05flag", True)
-            if tst != "charged" and vr("chm") not in ["charged", None]:
-                res = True
-            vr("chm", tst)
-            vr("j").move(y=11)
-            vr("lc")()
-            vr("j").move(y=11, x=(vr("c").size[0] // 2) - (len(tst) // 2))
-            vr("j").nwrite(tst)
-            force = True
-    elif vr("chm") not in [None, "discharging"]:
-        vr("j").move(y=11)
-        vr("lc")()
-        res = True
-        vr("chm", "discharging")
-        force = True
-    elif vr("chm") is None:
-        vr("chm", "discharging")
+    if vr("b").percentage > 20:
+        vr("15flag", True)
+        vr("10flag", True)
+        vr("05flag", True)
 
     if force or time.monotonic() - vr("batc") > 60:
-        vr("j").move(y=17, x=30)
+        vr("j").move(y=17, x=45)
         vr("j").nwrite(vr("pstr")() + " " * 3)
         need_refr = True
         vr("batc", time.monotonic())
-        vr("bati")()
 
     tmpip = str(be.devices["network"][0].get_ipconf()["ip"])
     if vr("cached_ip") != tmpip:
-        vr("j").move(y=16, x=23)
+        vr("j").move(y=16, x=36)
         vr("j").nwrite(" " * 16)
-        vr("j").move(y=16, x=23)
+        vr("j").move(y=16, x=36)
         vr("j").nwrite(tmpip)
         need_refr = True
 
@@ -588,9 +576,6 @@ def updi(force=False) -> None:
 
     if res:
         vr("reset_standby", True)
-        if vr("lowpow"):
-            vr("resume")()
-        vr("vibr")(vr("confirm_bop_seq"))
 
 
 def str_rotate(string: str, n: int) -> str:
@@ -602,13 +587,13 @@ def swipe_unlock() -> bool:
     ct = vr("rt")()
     ll = 1
     rot = 0
-    lstr = "--^^^^-^-Swipe-up-to-unlock-^^--^^^^-"
+    lstr = "-^^-Swipe-up-to-unlock-^-^^-^-^-Swipe-up-to-unlock-"
     checkt = time.monotonic()
     while ct:
         vr("lc")()
         y = ct[0]["y"]
         ll = int((y * (vr("c").size[1]) / 240) + 1)
-        vr("j").move(y=ll, x=2)
+        vr("j").move(y=ll, x=1)
         vr("j").nwrite(vr("str_rotate")(lstr, rot))
         if time.monotonic() - checkt > 0.12:
             rot += 1
@@ -622,20 +607,14 @@ def swipe_unlock() -> bool:
 
 
 def vibr(pattern: list) -> None:
-    if vr("vibrate"):
-        vr("stv")()
-        for i in range(len(pattern)):
-            vr("v").sequence[i] = pattern[i]
-        for i in range(len(pattern), 8):
-            vr("v").sequence[i] = vr("v").effect(0)
-        vr("v").play()
+    pass  # No vibration
 
 
 def stv() -> None:
-    vr("v").stop()
+    pass  # No vibration
 
 
-vr("j").move(y=12, x=18)
+vr("j").move(y=12, x=26)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -650,18 +629,18 @@ def lm(start_locked: bool = False) -> None:
         retry = False
         vr("j").clear()
         vr("ctop")(
-            "T-Watch Manager (T. W. M.)" + " " * 9 + "v1.0" + (vr("c").size[0] * "-")
+            "T-Deck Manager (T. W. M.)" + " " * 23 + "v1.1" + (vr("c").size[0] * "-")
         )
         vr("j").move(y=13)
         vr("j").nwrite(vr("c").size[0] * "-")
         vr("j").nwrite(" " * 2 + "\n  ".join(vr("logo")))
-        vr("j").move(y=15, x=19)
+        vr("j").move(y=15, x=34)
         vr("j").nwrite("| IP Address:")
-        vr("j").move(y=16, x=19)
+        vr("j").move(y=16, x=34)
         vr("j").nwrite("| - " + str(be.devices["network"][0].get_ipconf()["ip"]))
-        vr("j").move(y=17, x=19)
+        vr("j").move(y=17, x=34)
         vr("j").nwrite("| Battery: ")
-        vr("j").move(y=18, x=19)
+        vr("j").move(y=18, x=34)
         gc.collect()
         gc.collect()
         freeb = gc.mem_free()
@@ -693,13 +672,14 @@ def lm(start_locked: bool = False) -> None:
                             break
                     if time.monotonic() - lp > 8:
                         if vr("d").brightness > 0.1:
-                            vr("d").brightness -= 0.05
+                            vr("d").brightness -= 0.01
                             time.sleep(0.05)
                         else:
                             vr("suspend")()
                             lm = time.monotonic()
                     gc.collect()
                 else:
+                    vr("c").alt_mode = False
                     if vr("d").brightness:
                         if vr("moved")() or vr("rt")():
                             lm = time.monotonic()
@@ -708,17 +688,9 @@ def lm(start_locked: bool = False) -> None:
                                 vr("d").brightness -= 0.001
                             else:
                                 vr("d").brightness = 0
-                                vr("p")._aldo2_voltage_setpoint = 0
-                                if not (
-                                    be.devices["network"][0].enabled
-                                    or pv[0]["consoles"]["ttyUSB0"].connected
-                                ):
-                                    cpu.frequency = 20_000_000
                         time.sleep(0.2)
                     elif vr("susbri") and (vr("moved")() or vr("rt")()):
                         vr("d").brightness = vr("susbri")
-                        if not vr("p")._aldo2_voltage_setpoint:
-                            vr("p")._aldo2_voltage_setpoint = 3300
                         lm = time.monotonic()
                         time.sleep(0.2)
                     else:
@@ -732,15 +704,16 @@ def lm(start_locked: bool = False) -> None:
                     lp = lm
                 t = vr("rk")()
                 if t[1]:
-                    vr("shutdown")()
+                    if not vr("lowpow"):
+                        vr("shutdown")()
                 elif t[0]:
                     if vr("lowpow"):
                         vr("resume")()
-                        if time.monotonic() - press < 1.1:
+                        if time.monotonic() - press < 0.4:
                             return
                         lp = time.monotonic()
                     else:
-                        if time.monotonic() - press < 0.55:
+                        if time.monotonic() - press < 0.4:
                             return
                         else:
                             vr("suspend")()
@@ -755,7 +728,7 @@ def lm(start_locked: bool = False) -> None:
             return
 
 
-vr("j").move(y=12, x=19)
+vr("j").move(y=12, x=27)
 vr("j").nwrite("|")
 vr("refr")()
 vr(
@@ -808,34 +781,9 @@ vr(
 )
 
 
-vr("j").move(y=12, x=20)
+vr("j").move(y=12, x=28)
 vr("j").nwrite("|")
 vr("refr")()
-
-
-def drawbox() -> None:
-    sz = vr("c").size[0] // 4
-    vr("j").move(y=vr("c").size[1] - 2)
-    vr("j").nwrite(
-        " /"
-        + "-" * (sz - 2)
-        + "v"
-        + ("-" * (sz) + "v") * 2
-        + "-" * (sz - 1)
-        + "."
-        + "/"
-        + " " * (sz - 1)
-        + "|"
-        + (sz * " " + "|") * 2
-        + (sz - 1) * " "
-        + "/"
-        + "'"
-        + "-" * (sz - 1)
-        + "^"
-        + ("-" * (sz) + "^") * 2
-        + "-" * (sz - 2)
-        + "/"
-    )
 
 
 def ditem(item: str, sel: bool) -> None:
@@ -859,6 +807,7 @@ def dmenu(
         scl += 1
     reset_sel = False
     while retry and not vr("quit_twm"):
+        vr("c").alt_mode = True
         timeout_c = time.monotonic()
         if reset_sel and not remember:
             sel = 0
@@ -867,16 +816,7 @@ def dmenu(
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
-        vr("drawbox")()
-        ysize = vr("c").size[1] - 1
-        vr("j").move(y=ysize, x=5)
-        vr("j").nwrite("UP")
-        vr("j").move(y=ysize, x=13)
-        vr("j").nwrite("DOWN")
-        vr("j").move(y=ysize, x=23)
-        vr("j").nwrite("ABORT")
-        vr("j").move(y=ysize, x=34)
-        vr("j").nwrite("OK")
+        ysize = vr("c").size[1]
         db = 0
         tm = -1
         u = True
@@ -910,26 +850,26 @@ def dmenu(
                             vr("j").write("   [...]")
                     vr("refr")()
                 if db:
-                    vr("vibr")(vr("bop_seq") if db == 1 else vr("bop_bad_seq"))
                     db = 0
-                t = vr("rt")()
+                m = vr("rj")()
                 k = vr("rk")()
-                if k[1]:
-                    vr("shutdown")()
-                elif k[0]:
-                    vr("lm")()
-                    retry = True
-                    reset_sel = True
-                    break
-                elif t:
+                t = vr("rt")()
+                if t:
                     timeout_c = time.monotonic()
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
-                    elif t[0]["y"] > 190 and timeout_c - tm > 0.145:
+                if k[1]:
+                    break
+                elif k[0]:
+                    return sel
+                elif m:
+                    timeout_c = time.monotonic()
+                    if vr("d").brightness < vr("mainbri"):
+                        vr("d").brightness = vr("mainbri")
+                    else:
                         db = 1
-                        x = t[0]["x"]
                         tm = timeout_c
-                        if x < 61:  # up
+                        if m == "w":  # up
                             if sel:
                                 sel -= 1
                                 u = True
@@ -937,7 +877,7 @@ def dmenu(
                                     scl -= 1
                             else:
                                 db += 1
-                        elif x < 121:  # down
+                        elif m == "s":  # down
                             if sel < len(data) - 1:
                                 sel += 1
                                 u = True
@@ -945,12 +885,8 @@ def dmenu(
                                     scl += 1
                             else:
                                 db += 1
-                        elif x < 181:  # cancel
-                            vr("vibr")(vr("confirm_bop_seq"))
+                        elif m == "q":  # cancel
                             break
-                        else:  # confirm
-                            vr("vibr")(vr("confirm_bop_seq"))
-                            return sel
                 elif timeout is not None and time.monotonic() - timeout_c > timeout:
                     if vr("d").brightness > 0.1:
                         vr("d").brightness -= 0.05
@@ -965,7 +901,7 @@ def dmenu(
     return -1
 
 
-vr("j").move(y=12, x=21)
+vr("j").move(y=12, x=29)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -975,23 +911,15 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
     sel = preselect
     need_refr = True
     while retry and not vr("quit_twm"):
+        vr("c").alt_mode = True
         timeout = time.monotonic()
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
-        vr("drawbox")()
         oldselp = -1
         oldsel = -1
         iteml = len(data)
         dashes = vr("c").size[0] - 2
-        vr("j").move(y=vr("c").size[1] - 1, x=4)
-        vr("j").nwrite("MINUS")
-        vr("j").move(y=vr("c").size[1] - 1, x=13)
-        vr("j").nwrite("PLUS")
-        vr("j").move(y=vr("c").size[1] - 1, x=23)
-        vr("j").nwrite("ABORT")
-        vr("j").move(y=vr("c").size[1] - 1, x=34)
-        vr("j").nwrite("OK")
         db = 0
         tm = -1
         try:
@@ -1036,45 +964,37 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                         seq = vr("bop_bad_seq")
                     elif db == 3:
                         seq = vr("clk_seq")
-                    vr("vibr")(seq)
                     db = 0
                 t = vr("rt")()
+                m = vr("rj")()
                 k = vr("rk")()
                 if k[1]:
-                    vr("shutdown")()
-                elif k[0]:
-                    vr("lm")()
-                    retry = True
                     break
-                elif t:
+                elif k[0]:
+                    return sel
+                elif t or m:
                     timeout = time.monotonic()
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
-                    elif t[0]["y"] > 190:
-                        if timeout - tm > 0.145:
-                            tm = timeout
-                            db = 1
-                            if t[0]["x"] < 61:  # minus
-                                if sel:
-                                    sel -= 1
-                                else:
-                                    db += 1
-                            elif t[0]["x"] < 121:  # plus
-                                if sel < len(data) - 1:
-                                    sel += 1
-                                else:
-                                    db += 1
-                            elif t[0]["x"] < 181:  # cancel
-                                vr("vibr")(vr("confirm_bop_seq"))
-                                break
-                            else:  # confirm
-                                vr("vibr")(vr("confirm_bop_seq"))
-                                return sel
-                            time.sleep(0.1)
+                    if m:
+                        db = 1
+                        if m == "a":  # minus
+                            if sel:
+                                sel -= 1
+                            else:
+                                db += 1
+                        elif m == "d":  # plus
+                            if sel < len(data) - 1:
+                                sel += 1
+                            else:
+                                db += 1
+                        elif m == "q":  # cancel
+                            break
+                        time.sleep(0.1)
                     else:
                         x = t[0]["x"]
-                        if x > 5 and x < 235:
-                            sel = ((x - 5) * iteml) // 230
+                        if x > 5 and x < 320:
+                            sel = ((x - 5) * iteml) // 320
                             if sel != oldsel:
                                 db = 3
                                 need_refr = True
@@ -1116,7 +1036,6 @@ def appm() -> None:
             if exef is None or mode is None:
                 vr("j").clear()
                 vr("player").play(vr("s_no"))
-                vr("vibr")(vr("err_seq"))
                 vr("j").nwrite("Invalid application!")
                 vr("refr")()
                 time.sleep(3)
@@ -1138,14 +1057,13 @@ def appm() -> None:
                 else:
                     vr("j").clear()
                     vr("player").play(vr("s_no"))
-                    vr("vibr")(vr("err_seq"))
                     vr("j").nwrite("Unknown execution mode!")
                     vr("refr")()
                     time.sleep(3)
     vrd("apps")
 
 
-vr("j").move(y=12, x=22)
+vr("j").move(y=12, x=30)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1155,6 +1073,7 @@ def hs() -> None:
     vr("lm")()
     prev = 0
     while not vr("quit_twm"):
+        vr("waitc")()
         sel = vr("dmenu")(
             "Home",
             [
@@ -1190,7 +1109,6 @@ def hs() -> None:
             sel = vr("dmenu")(
                 "Power menu",
                 [
-                    "Shutdown",
                     "Exit to shell",
                     "Reload",
                     "Reboot",
@@ -1204,37 +1122,33 @@ def hs() -> None:
             if not sel:
                 vr("shutdown")()
             elif sel == 1:
-                vr("j").clear()
-                vr("j").nwrite("Bye!")
-                vr("refr")()
-            elif sel == 2:
                 be.based.run("reload")
-            elif sel == 3:
+            elif sel == 2:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting.. ")
                 vr("refr")()
                 be.based.run("reboot")
-            elif sel == 4:
+            elif sel == 3:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to safemode.. ")
                 vr("refr")()
                 be.based.run("reboot safemode")
-            elif sel == 5:
+            elif sel == 4:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to TinyUF2.. ")
                 vr("refr")()
                 be.based.run("reboot uf2")
-            elif sel == 6:
+            elif sel == 5:
                 vr("j").clear()
                 vr("j").nwrite("Rebooting to bootloader.. ")
                 vr("refr")()
                 be.based.run("reboot bootloader")
-            elif sel == 7:
+            elif sel == 6:
                 vr("j").clear()
                 vr("j").nwrite("Enabling.. ")
                 vr("refr")()
                 be.based.run("devmode -q")
-            elif sel == 8:
+            elif sel == 7:
                 vr("j").clear()
                 vr("j").nwrite("Enabling (permenantly).. ")
                 vr("refr")()
@@ -1248,13 +1162,14 @@ def vmain() -> None:
         vr("hs")()
 
 
-vr("j").move(y=12, x=23)
+vr("j").move(y=12, x=31)
 vr("j").nwrite("|")
 vr("refr")()
 
 
 vr("rk", rk)
 vr("rt", rt)
+vr("rj", rj)
 vr("ra", ra)
 vr("last_accel", ra())
 vr("moved", moved)
@@ -1265,13 +1180,13 @@ vr("lc", lc)
 vr("tix", 0)
 vr("pstr", pstr)
 vr("notifylow", notifylow)
-vr("bati", bati)
 vr("ring_alarm", ring_alarm)
 vr("ring_timer", ring_timer)
 vr("fselect", fselect)
 vr("check_timers", check_timers)
 vr("treat_timers", treat_timers)
 vr("updi", updi)
+vr("compare_time", compare_time)
 vr("clocker", clocker)
 vr("suspend", suspend)
 vr("resume", resume)
@@ -1280,7 +1195,6 @@ vr("swipe_unlock", swipe_unlock)
 vr("lm", lm)
 vr("vibr", vibr)
 vr("stv", stv)
-vr("drawbox", drawbox)
 vr("ditem", ditem)
 vr("dmenu", dmenu)
 vr("slidemenu", slidemenu)
@@ -1290,6 +1204,7 @@ vr("main", vmain)
 del (
     rk,
     rt,
+    rj,
     ra,
     moved,
     ctop,
@@ -1298,13 +1213,13 @@ del (
     lc,
     pstr,
     notifylow,
-    bati,
     ring_alarm,
     ring_timer,
     fselect,
     check_timers,
     treat_timers,
     updi,
+    compare_time,
     clocker,
     suspend,
     resume,
@@ -1313,7 +1228,6 @@ del (
     lm,
     vibr,
     stv,
-    drawbox,
     ditem,
     dmenu,
     slidemenu,
@@ -1322,7 +1236,7 @@ del (
     vmain,
 )
 
-vr("j").move(y=12, x=24)
+vr("j").move(y=12, x=32)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1423,7 +1337,7 @@ vrd("code")
 vrd("gray")
 vrd("i")
 
-vr("j").move(y=12, x=25)
+vr("j").move(y=12, x=33)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1435,17 +1349,14 @@ def shutdown(instant=False) -> None:
     if vr("lowpow"):
         vr("resume")()
     if not instant:
-        vr("ctop")("Shutting down.. ")
+        vr("ctop")("Exiting to shell.. ")
         vr("refr")()
         vr("d").brightness = vr("mainbri")
-        vr("vibr")(vr("al_seq"))
         time.sleep(1)
-        while vr("d").brightness > 0.01:
-            vr("d").brightness -= 0.01
-            time.sleep(0.1)
-        vr("j").nwrite("Bye!")
         vr("refr")()
-    be.based.run("shutdown")
+    vr("exit_tty", True)
+    vr("quit_twm", True)
+    raise KeyboardInterrupt
 
 
 def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:

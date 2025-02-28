@@ -12,15 +12,20 @@ try:
                 raise KeyboardInterrupt
             time.sleep(1)
     vr("ok", 0)
-    be.api.subscript("/bin/twm/init.py")
+    vr("model", 0)
+    if be.based.system_vars["BOARD"] == "lilygo_tdeck":
+        vr("model", 1)
+    vr("exit_tty", False)
+    be.api.subscript(f'/bin/twm/init.{vr("model")}.py')
     if vr("ok") == 1:
         vrd("ok")
         vr("crashes", 0)
         while vr("crashes") < 3:
             try:
                 vr("main")()
-                vr("b").charging_enabled = True
-                vr("p")._aldo4_voltage_setpoint = 3300
+                if not vr("model"):
+                    vr("b").charging_enabled = True
+                    vr("p")._aldo4_voltage_setpoint = 3300
                 vr("player").deinit()
                 if vr("lowpow"):
                     vr("resume")()
@@ -36,7 +41,8 @@ try:
                     term.write("Too many crashes, exiting TWM!")
     else:
         term.write("Failed to initialize TWM!")
-    vr("c").disable()
+    if not vr("exit_tty"):
+        vr("c").disable()
     be.devices["DISPLAY"][0].auto_refresh = True
 except KeyboardInterrupt:
     pass

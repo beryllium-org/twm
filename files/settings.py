@@ -78,15 +78,21 @@ def setm() -> None:
                     vr("refr")()
                     time.sleep(3)
         elif sel == 4:
-            vr("vibrate", not vr("vibrate"))
-            try:
-                remount("/", False)
-                cptoml.put("vibration", vr("vibrate"), subtable="TWM")
-                remount("/", True)
-            except RuntimeError:
-                vr("vibr")(vr("err_seq"))
-                vr("ctop")("Could not write to storage!")
-                vr("player").play(vr("s_no"))
+            if not vr("model"):
+                vr("vibrate", not vr("vibrate"))
+                try:
+                    remount("/", False)
+                    cptoml.put("vibration", vr("vibrate"), subtable="TWM")
+                    remount("/", True)
+                except RuntimeError:
+                    vr("vibr")(vr("err_seq"))
+                    vr("ctop")("Could not write to storage!")
+                    vr("player").play(vr("s_no"))
+                    vr("refr")()
+                    time.sleep(3)
+            else:
+                vr("ctop")("This board does not have vibration!")
+                vr("player").player(vr("s_no"))
                 vr("refr")()
                 time.sleep(3)
         elif sel == 5:
