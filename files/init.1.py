@@ -712,6 +712,7 @@ def lm(start_locked: bool = False) -> None:
                         if time.monotonic() - press < 0.4:
                             return
                         lp = time.monotonic()
+                        vr("waitc")()
                     else:
                         if time.monotonic() - press < 0.4:
                             return
