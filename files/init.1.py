@@ -135,6 +135,7 @@ vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
 vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.01)
 vr("reset_standby", False)
 vr("alarm", (cptoml.fetch("alarm", subtable="TWM")))
+vr("alarm_disarmed", False)
 if vr("alarm") and len(vr("alarm")) != 4:
     vr("alarm", None)
 vr("timer", None)
@@ -401,8 +402,12 @@ def check_timers() -> bool:
         + ("0" if ct.tm_min < 10 else "")
         + str(ct.tm_min)
     )
-    if vr("alarm") is not None and vr("alarm") == ft:
-        return True
+    if vr("alarm") is not None:
+        arm = vr("alarm_disarmed")
+        if vr("alarm") == ft and not arm:
+            return True
+        elif arm and vr("alarm") != ft:
+            vr("alarm_disarmed", False)
     if vr("timer") is not None and vr("timer") < time.monotonic():
         return True
     perc = vr("b").percentage
@@ -425,7 +430,7 @@ def treat_timers() -> None:
         + ("0" if ct.tm_min < 10 else "")
         + str(ct.tm_min)
     )
-    if vr("alarm") is not None and vr("alarm") == ft:
+    if vr("alarm") is not None and vr("alarm") == ft and not vr("alarm_disarmed"):
         vr("ring_alarm")()
     if vr("timer") is not None and vr("timer") < time.monotonic():
         vr("ring_timer")()
@@ -461,6 +466,7 @@ def notifylow() -> None:
 def ring_alarm() -> None:
     if vr("lowpow"):
         vr("resume")()
+    vr("alarm_disarmed", True)
     if not vr("player").playing:
         vr("player").play(vr("s_al"))
     vr("d").brightness = vr("mainbri")
@@ -1372,7 +1378,7 @@ def shutdown(instant=False) -> None:
             raise KeyboardInterrupt
 
 
-def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
+def drawmode(width=1, height=1, tile_width=320, tile_height=240) -> None:
     if vr("dm") in ["text", "dual"]:
         vr("c").disable()
     vr("d").brightness = vr("mainbri") if not vr("lowpow") else vr("susbri")
@@ -1408,7 +1414,7 @@ def textmode() -> None:
     vr("dm", "text")
 
 
-def dualmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
+def dualmode(width=1, height=1, tile_width=320, tile_height=240) -> None:
     if vr("dm") == "draw":
         vr("textmode")()
     if vr("dm") == "text":
