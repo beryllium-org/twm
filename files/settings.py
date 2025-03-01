@@ -8,7 +8,13 @@ def setm() -> None:
                 "Wi-Fi [" + ("ON" if be.devices["network"][0].enabled else "OFF") + "]",
                 "Brightness",
                 "Idle brightness",
-                "Vibration [" + ("ON" if vr("vibrate") else "OFF") + "]",
+                "Vibration ["
+                + (
+                    ("ON" if vr("vibrate") else "OFF")
+                    if not vr("model")
+                    else "Unavailable"
+                )
+                + "]",
                 "Sounds [" + ("ON" if vr("sounds") else "OFF") + "]",
                 "Alarm sound",
                 "Timer sound",
@@ -92,7 +98,7 @@ def setm() -> None:
                     time.sleep(3)
             else:
                 vr("ctop")("This board does not have vibration!")
-                vr("player").player(vr("s_no"))
+                vr("player").play(vr("s_no"))
                 vr("refr")()
                 time.sleep(3)
         elif sel == 5:
@@ -180,7 +186,7 @@ def setm() -> None:
             term.hold_stdout = olds
             pv[0]["console_active"] = oat
             del ot
-            vr("j").move(y=19, x=9)
+            vr("j").move(y=19, x=9 if not vr("model") else 16)
             vr("j").nwrite("-- Touch to go back --")
             vr("refr")()
             vr("waitc")()

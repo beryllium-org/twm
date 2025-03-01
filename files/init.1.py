@@ -41,7 +41,7 @@ vr("j").move(y=5)
 vr("j").nwrite(
     vr("j").nwrite(" " * vr("lmid") + ("\n" + (" " * vr("lmid"))).join(vr("logo")))
 )
-vr("j").move(y=12, x=20)
+vr("j").move(y=12, x=19)
 vr("j").nwrite("<|" + (" " * 14) + ">")
 vrd("lmid")
 vr("refr")()
@@ -54,7 +54,7 @@ vr("15flag", True)
 vr("10flag", True)
 vr("05flag", True)
 
-vr("j").move(y=12, x=21)
+vr("j").move(y=12, x=20)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -125,16 +125,18 @@ vr("lowpow", False)
 vr("pkst", vr("c").alt_mode)
 vr("lasttt", 0)
 vr("lastth", [])
-vr("stkey", "")
+vr("stkey", None)
 
-vr("j").move(y=12, x=22)
+vr("j").move(y=12, x=21)
 vr("j").nwrite("|")
 vr("refr")()
 
 vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
 vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.01)
 vr("reset_standby", False)
-vr("alarm", None)
+vr("alarm", (cptoml.fetch("alarm", subtable="TWM")))
+if vr("alarm") and len(vr("alarm")) != 4:
+    vr("alarm", None)
 vr("timer", None)
 vr("timer_rem", None)
 
@@ -159,18 +161,20 @@ vr("s_no", cptoml.fetch("notification_sound", subtable="TWM"))
 if not isinstance(vr("s_no"), str):
     vr("s_no", "/usr/share/sounds/twm_notification.wav")
 
-vr("j").move(y=12, x=23)
+vr("j").move(y=12, x=22)
 vr("j").nwrite("|")
 vr("refr")()
 
 
-def rk() -> tuple:
+def rk(only_power: bool = False) -> tuple:
     nub = vr("c").alt_mode != vr("pkst")
     if nub:
         vr("pkst", not vr("pkst"))
+    if only_power:
+        return [False, nub]
     key = ""
     if vr("stkey") == 10:
-        vr("stkey", False)
+        vr("stkey", None)
         return [True, nub]
     if vr("c").in_waiting:
         key = vr("c").read(1)
@@ -193,30 +197,38 @@ def rt() -> list:
     return res
 
 
+vr(
+    "rj_map",
+    {
+        23: "w",
+        72: "w",
+        19: "s",
+        70: "s",
+        1: "a",
+        68: "a",
+        4: "d",
+        9: "d",
+        17: "q",
+        5: "e",
+        3: "c",
+        32: " ",
+    },
+)
+
+
 def rj() -> str:
-    if vr("c").in_waiting:
-        k = vr("c").read(1)[0] if not vr("stkey") else vr("stkey")
+    stkey = vr("stkey")
+    if stkey or vr("c").in_waiting:
+        k = stkey or vr("c").read(1)[0]
         vr("stkey", None)
-        if k == 27:
+
+        if k in (27, 91):
             return vr("rj")()
-        elif k == 91:
-            return vr("rj")()
-        elif k in [23, 72]:
-            return "w"
-        elif k in [19, 70]:
-            return "s"
-        elif k in [1, 68]:
-            return "a"
-        elif k in [4, 9]:
-            return "d"
-        elif k == 17:
-            return "q"
-        elif k == 5:
-            return "e"
-        elif k == 3:
-            return "c"
-        elif k == 10:
+
+        if k == 10:
             vr("stkey", 10)
+
+        return vr("rj_map").get(k, "")
     return ""
 
 
@@ -299,9 +311,9 @@ def clocker() -> None:
         o = vr("months")[o - 1]
         vr("j").write(vr("days")[wd] + " " + str(d) + "/" + str(o) + "/" + str(y))
         vr("lc")()
-        if vr("alarm") is not None and vr("compare_time")(vr("alarm")) > 0:
+        if vr("alarm"):
             vr("j").nwrite("Alarm: ")
-            vr("j").nwrite(target_time[:2] + ":" + target_time[2:])
+            vr("j").nwrite(vr("alarm")[:2] + ":" + vr("alarm")[2:])
         hl = h
         hh = 0
         if hl > 9:
@@ -350,7 +362,7 @@ def clocker() -> None:
         time.sleep(0.15)
 
 
-vr("j").move(y=12, x=24)
+vr("j").move(y=12, x=23)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -382,7 +394,14 @@ def fselect(frompath: str = "/home/board"):
 
 
 def check_timers() -> bool:
-    if vr("alarm") is not None and vr("timer") < time.monotonic():
+    ct = time.localtime()
+    ft = (
+        ("0" if ct.tm_hour < 10 else "")
+        + str(ct.tm_hour)
+        + ("0" if ct.tm_min < 10 else "")
+        + str(ct.tm_min)
+    )
+    if vr("alarm") is not None and vr("alarm") == ft:
         return True
     if vr("timer") is not None and vr("timer") < time.monotonic():
         return True
@@ -399,7 +418,14 @@ def check_timers() -> bool:
 
 
 def treat_timers() -> None:
-    if vr("alarm") is not None and vr("timer") < time.monotonic():
+    ct = time.localtime()
+    ft = (
+        ("0" if ct.tm_hour < 10 else "")
+        + str(ct.tm_hour)
+        + ("0" if ct.tm_min < 10 else "")
+        + str(ct.tm_min)
+    )
+    if vr("alarm") is not None and vr("alarm") == ft:
         vr("ring_alarm")()
     if vr("timer") is not None and vr("timer") < time.monotonic():
         vr("ring_timer")()
@@ -438,32 +464,25 @@ def ring_alarm() -> None:
     if not vr("player").playing:
         vr("player").play(vr("s_al"))
     vr("d").brightness = vr("mainbri")
-    ahr = vr("r").alarm[0].tm_hour
-    amin = vr("r").alarm[0].tm_min
-    astr = "ALARM -!- alarm - ALARM -!- alarm -- "
+    ahr = vr("alarm")[:2]
+    amin = vr("alarm")[2:]
+    astr = "ALARM -- alarm - ALARM -!- alarm -- ALARM -- alarm -"
     shf = 0
     sht = time.monotonic()
     nt = False
     rt = -1
-    vr("ctop")(
-        "ALARM - "
-        + (("0" + str(ahr)) if ahr < 10 else str(ahr))
-        + ":"
-        + (("0" + str(amin)) if amin < 10 else str(amin))
-        + "\n"
-        + (vr("c").size[0] * "-")
-    )
-    vr("j").move(y=7, x=19)
+    vr("ctop")(f"ALARM - {ahr}:{amin}\n" + (vr("c").size[0] * "-"))
+    vr("j").move(y=7, x=26)
     vr("j").nwrite("/\\")
-    vr("j").move(y=8, x=18)
+    vr("j").move(y=8, x=25)
     vr("j").nwrite("/  \\")
-    vr("j").move(y=9, x=17)
+    vr("j").move(y=9, x=24)
     vr("j").nwrite("/ || \\")
-    vr("j").move(y=10, x=16)
+    vr("j").move(y=10, x=23)
     vr("j").nwrite("/  ||  \\")
-    vr("j").move(y=11, x=15)
+    vr("j").move(y=11, x=22)
     vr("j").nwrite("/   ..   \\")
-    vr("j").move(y=12, x=14)
+    vr("j").move(y=12, x=21)
     vr("j").nwrite("/__________\\")
     vr("refr")()
     k = vr("rk")()
@@ -475,14 +494,14 @@ def ring_alarm() -> None:
             if lt - rt > 2:
                 rt = lt
             k = vr("rk")()
-            vr("j").move(y=4, x=2)
+            vr("j").move(y=4, x=1)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
-            vr("j").move(y=18, x=2)
+            vr("j").move(y=18, x=1)
             vr("j").nwrite(vr("str_rotate")(astr, shf))
             vr("j").move(y=15)
             vr("lc")()
             if nt < 0:
-                vr("j").nwrite((" " * 6) + "Press Power button to exit")
+                vr("j").nwrite((" " * 13) + "Press Power button to exit")
             nt += 1
             if nt > 6:
                 nt = -6
@@ -493,7 +512,6 @@ def ring_alarm() -> None:
             vr("refr")()
     except KeyboardInterrupt:
         vr("quit_twm", True)
-    vr("r").alarm_status = False
     vr("player").stop()
 
 
@@ -540,7 +558,7 @@ def ring_timer() -> None:
     vr("player").stop()
 
 
-vr("j").move(y=12, x=25)
+vr("j").move(y=12, x=24)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -614,7 +632,7 @@ def stv() -> None:
     pass  # No vibration
 
 
-vr("j").move(y=12, x=26)
+vr("j").move(y=12, x=25)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -660,8 +678,15 @@ def lm(start_locked: bool = False) -> None:
                     retry = True
                     vr("chm", None)
                     break
+                m = vr("rj")()
                 if not vr("lowpow"):
                     tou = vr("rt")()
+                    if m == "q":
+                        vr("shutdown")()
+                        retry = True
+                        break
+                    elif m == " ":
+                        return
                     if tou:
                         lp = time.monotonic()
                         if vr("d").brightness < vr("mainbri"):
@@ -680,21 +705,7 @@ def lm(start_locked: bool = False) -> None:
                     gc.collect()
                 else:
                     vr("c").alt_mode = False
-                    if vr("d").brightness:
-                        if vr("moved")() or vr("rt")():
-                            lm = time.monotonic()
-                        elif time.monotonic() - lm > 60:
-                            if vr("d").brightness > 0.001:
-                                vr("d").brightness -= 0.001
-                            else:
-                                vr("d").brightness = 0
-                        time.sleep(0.2)
-                    elif vr("susbri") and (vr("moved")() or vr("rt")()):
-                        vr("d").brightness = vr("susbri")
-                        lm = time.monotonic()
-                        time.sleep(0.2)
-                    else:
-                        time.sleep(0.8)
+                    time.sleep(0.1)
                 if vr("d").brightness:
                     vr("clocker")()
                 vr("updi")()
@@ -702,23 +713,23 @@ def lm(start_locked: bool = False) -> None:
                     vr("reset_standby", False)
                     lm = time.monotonic()
                     lp = lm
-                t = vr("rk")()
+                t = [False, False] if not m else vr("rk")(True)
+                if (not vr("lowpow")) and m == " ":
+                    return
                 if t[1]:
                     if not vr("lowpow"):
                         vr("shutdown")()
-                elif t[0]:
+                        retry = True
+                        break
+                elif vr("stkey") == 10:
+                    vr("stkey", None)
                     if vr("lowpow"):
                         vr("resume")()
-                        if time.monotonic() - press < 0.4:
-                            return
                         lp = time.monotonic()
                         vr("waitc")()
                     else:
-                        if time.monotonic() - press < 0.4:
-                            return
-                        else:
-                            vr("suspend")()
-                            lm = time.monotonic()
+                        vr("suspend")()
+                        lm = time.monotonic()
                     press = time.monotonic()
                 elif vr("lowpow"):
                     be.api.tasks.run()
@@ -729,7 +740,7 @@ def lm(start_locked: bool = False) -> None:
             return
 
 
-vr("j").move(y=12, x=27)
+vr("j").move(y=12, x=26)
 vr("j").nwrite("|")
 vr("refr")()
 vr(
@@ -782,7 +793,7 @@ vr(
 )
 
 
-vr("j").move(y=12, x=28)
+vr("j").move(y=12, x=27)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -902,7 +913,7 @@ def dmenu(
     return -1
 
 
-vr("j").move(y=12, x=29)
+vr("j").move(y=12, x=28)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1064,7 +1075,7 @@ def appm() -> None:
     vrd("apps")
 
 
-vr("j").move(y=12, x=30)
+vr("j").move(y=12, x=29)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1163,7 +1174,7 @@ def vmain() -> None:
         vr("hs")()
 
 
-vr("j").move(y=12, x=31)
+vr("j").move(y=12, x=30)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1237,7 +1248,7 @@ del (
     vmain,
 )
 
-vr("j").move(y=12, x=32)
+vr("j").move(y=12, x=31)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1338,7 +1349,7 @@ vrd("code")
 vrd("gray")
 vrd("i")
 
-vr("j").move(y=12, x=33)
+vr("j").move(y=12, x=32)
 vr("j").nwrite("|")
 vr("refr")()
 
@@ -1350,14 +1361,15 @@ def shutdown(instant=False) -> None:
     if vr("lowpow"):
         vr("resume")()
     if not instant:
-        vr("ctop")("Exiting to shell.. ")
-        vr("refr")()
-        vr("d").brightness = vr("mainbri")
-        time.sleep(1)
-        vr("refr")()
-    vr("exit_tty", True)
-    vr("quit_twm", True)
-    raise KeyboardInterrupt
+        res = vr("dmenu")("Exit to shell?", ["No", "Yes"])
+        if res == 1:
+            vr("ctop")("Exiting to shell.. ")
+            vr("refr")()
+            vr("d").brightness = vr("mainbri")
+            vr("refr")()
+            vr("exit_tty", True)
+            vr("quit_twm", True)
+            raise KeyboardInterrupt
 
 
 def drawmode(width=1, height=1, tile_width=240, tile_height=240) -> None:
@@ -1427,7 +1439,7 @@ del drawmode, textmode, dualmode, shutdown
 
 be.code_cache.clear()
 
-vr("j").move(y=12, x=26)
+vr("j").move(y=12, x=33)
 vr("j").nwrite("||")
 vr("refr")()
 
