@@ -730,10 +730,10 @@ def lm(start_locked: bool = False) -> None:
                         return
                     else:  # Touchscreen input
                         tou = vr("rt")()
-                        if tou:
+                        if tou or m:
                             vr("set_brightness")(vr("mainbri"))
                             lp = time.monotonic()
-                            if tou[0]["y"] > 160:
+                            if tou and tou[0]["y"] > 160:
                                 retry = vr("swipe_unlock")()
                                 vr("force_refr", True)
                                 break
