@@ -123,6 +123,7 @@ vr("ind", False)
 vr("batc", -70)
 vr("lowpow", False)
 vr("pkst", vr("c").alt_mode)
+vr("pklt", 0)
 vr("lasttt", 0)
 vr("lastth", [])
 vr("stkey", None)
@@ -133,7 +134,6 @@ vr("refr")()
 
 vr("mainbri", cptoml.fetch("brightness", subtable="TWM") / 100)
 vr("susbri", (cptoml.fetch("suspend_brightness", subtable="TWM")) * 0.01)
-vr("reset_standby", False)
 vr("alarm", (cptoml.fetch("alarm", subtable="TWM")))
 vr("alarm_disarmed", False)
 if vr("alarm") and len(vr("alarm")) != 4:
@@ -171,6 +171,13 @@ def rk(only_power: bool = False) -> tuple:
     nub = vr("c").alt_mode != vr("pkst")
     if nub:
         vr("pkst", not vr("pkst"))
+        if vr("pklt"):
+            vrm("pklt")
+            nub = False
+        else:
+            vrp("pklt", 2)
+    elif vr("pklt"):
+        vrm("pklt")
     if only_power:
         return [False, nub]
     key = ""
@@ -221,6 +228,8 @@ def rj() -> str:
     stkey = vr("stkey")
     if stkey or vr("c").in_waiting:
         k = stkey or vr("c").read(1)[0]
+        if isinstance(k, bytearray):
+            return ""
         vr("stkey", None)
 
         if k in (27, 91):
@@ -249,10 +258,12 @@ def ctop(data: str) -> None:
 def waitc() -> None:
     t = vr("rt")()
     k = vr("rk")()
-    while t or k[0]:
+    while t or k[1]:
         t = vr("rt")()
         k = vr("rk")()
         time.sleep(0.02)
+    vr("c").alt_mode = False
+    vr("pkst", False)
 
 
 def wany() -> None:
@@ -293,7 +304,7 @@ def clocker() -> None:
     if darr != vr("last_shown")[:3]:
         need_refr = True
         vr("last_shown", darr + vr("last_shown")[3:])
-    if vr("lowpow"):
+    if vr("d").brightness != vr("mainbri"):
         if m != vr("last_shown")[4]:
             vr("last_shown", vr("last_shown")[:3] + harr)
             need_refr = True
@@ -575,7 +586,6 @@ def pstr() -> str:
 
 def updi(force=False) -> None:
     need_refr = False
-    res = False
     if vr("b").percentage > 20:
         vr("15flag", True)
         vr("10flag", True)
@@ -597,9 +607,6 @@ def updi(force=False) -> None:
 
     if need_refr and vr("d").brightness:
         vr("refr")()
-
-    if res:
-        vr("reset_standby", True)
 
 
 def str_rotate(string: str, n: int) -> str:
@@ -643,10 +650,23 @@ vr("j").nwrite("|")
 vr("refr")()
 
 
+def set_brightness(target: float, slo_rate: float = 0.01) -> None:
+    while target < vr("d").brightness:
+        try:
+            vr("d").brightness -= slo_rate
+        except ValueError:
+            break
+        time.sleep(0.03)
+    while target > vr("d").brightness:
+        vr("d").brightness += slo_rate
+        time.sleep(0.03)
+    vr("d").brightness = target
+
+
 def lm(start_locked: bool = False) -> None:
     vr("chm", None)
     if start_locked:
-        vr("d").brightness = vr("susbri")
+        vr("d").brightness = vr("mainbri")
         vr("suspend")()
     retry = True
     while retry and not vr("quit_twm"):
@@ -674,71 +694,84 @@ def lm(start_locked: bool = False) -> None:
             freeb = str(freeb)
         vr("j").nwrite("| " + freeb + " bytes free")
         lp = time.monotonic()
-        lm = time.monotonic()
-        press = 0
         vr("waitc")()
         try:
             while True:
+                # Timer stuff
                 if vr("check_timers")():
                     vr("treat_timers")()
                     retry = True
                     vr("chm", None)
                     break
+
+                # Inputs
+                vr("c").alt_mode = True
+                vr("pkst", True)
                 m = vr("rj")()
-                if not vr("lowpow"):
-                    tou = vr("rt")()
-                    if m == "q":
+                vr("c").alt_mode = False
+                vr("pkst", False)
+                t = [False, False] if m else vr("rk")(True)
+
+                if not vr("lowpow"):  # ACTIVE
+                    if t[1]:  # Handle Trackpoint click, suspend
+                        vr("suspend")()
+                        vr("j").move(y=11)
+                        vr("lc")()
+                        vr("j").nwrite(
+                            (" " * 6) + "System Locked: Press trackpoint to unlock"
+                        )
+                        vr("set_brightness")(vr("susbri"))
+                        vr("waitc")()
+                    elif m == "q":  # Handle Quit
                         vr("shutdown")()
                         retry = True
                         break
-                    elif m == " ":
+                    elif m in [" ", "\n"]:  # Handle acceptable input
                         return
-                    if tou:
-                        lp = time.monotonic()
-                        if vr("d").brightness < vr("mainbri"):
-                            vr("d").brightness = vr("mainbri")
-                        elif tou[0]["y"] > 160:
-                            retry = vr("swipe_unlock")()
-                            vr("force_refr", True)
-                            break
-                    if time.monotonic() - lp > 8:
-                        if vr("d").brightness > 0.1:
-                            vr("d").brightness -= 0.01
-                            time.sleep(0.05)
-                        else:
+                    else:  # Touchscreen input
+                        tou = vr("rt")()
+                        if tou:
+                            vr("set_brightness")(vr("mainbri"))
+                            lp = time.monotonic()
+                            if tou[0]["y"] > 160:
+                                retry = vr("swipe_unlock")()
+                                vr("force_refr", True)
+                                break
+                        elif time.monotonic() - lp > 8:  # Timeout screen
+                            vr("j").move(y=11)
+                            vr("lc")()
+                            vr("j").nwrite(
+                                (" " * 6) + "System Locked: Press trackpoint to unlock"
+                            )
+                            vr("set_brightness")(vr("susbri"))
                             vr("suspend")()
-                            lm = time.monotonic()
-                    gc.collect()
-                else:
-                    vr("c").alt_mode = False
-                    time.sleep(0.1)
+                            vr("waitc")()
+                else:  # INACTIVE
+                    if m:  # Handle kb input, show lm
+                        vr("set_brightness")(vr("mainbri"))
+                        lp = time.monotonic()
+                    elif (
+                        vr("d").brightness > vr("susbri")
+                        and time.monotonic() - lp > 1.5
+                    ):
+                        vr("set_brightness")(vr("susbri"))
+                    elif vr("d").brightness and time.monotonic() - lp > 10:
+                        vr("set_brightness")(0, 0.0002)
+                    elif t[1]:  # Trackpoint click, unlock
+                        vr("resume")()
+                        vr("j").move(y=11)
+                        vr("lc")()
+                        vr("set_brightness")(vr("mainbri"))
+                        vr("waitc")()
+                        lp = time.monotonic()
+                    else:
+                        ctx = time.monotonic()
+                        gc.collect()
+                        be.api.tasks.run()
+                        time.sleep(max(0.1 - time.monotonic() - ctx, 0.01))
                 if vr("d").brightness:
                     vr("clocker")()
                 vr("updi")()
-                if vr("reset_standby"):
-                    vr("reset_standby", False)
-                    lm = time.monotonic()
-                    lp = lm
-                t = [False, False] if not m else vr("rk")(True)
-                if (not vr("lowpow")) and m == " ":
-                    return
-                if t[1]:
-                    if not vr("lowpow"):
-                        vr("shutdown")()
-                        retry = True
-                        break
-                elif vr("stkey") == 10:
-                    vr("stkey", None)
-                    if vr("lowpow"):
-                        vr("resume")()
-                        lp = time.monotonic()
-                        vr("waitc")()
-                    else:
-                        vr("suspend")()
-                        lm = time.monotonic()
-                    press = time.monotonic()
-                elif vr("lowpow"):
-                    be.api.tasks.run()
         except KeyboardInterrupt:
             if vr("lowpow"):
                 vr("resume")()
@@ -825,8 +858,6 @@ def dmenu(
         scl += 1
     reset_sel = False
     while retry and not vr("quit_twm"):
-        vr("c").alt_mode = True
-        timeout_c = time.monotonic()
         if reset_sel and not remember:
             sel = 0
             scl = 0
@@ -834,6 +865,9 @@ def dmenu(
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
+        vr("c").alt_mode = True
+        vr("pkst", True)
+        timeout_c = time.monotonic()
         ysize = vr("c").size[1]
         db = 0
         tm = -1
@@ -877,6 +911,8 @@ def dmenu(
                     if vr("d").brightness < vr("mainbri"):
                         vr("d").brightness = vr("mainbri")
                 if k[1]:
+                    retry = True
+                    vr("lm")()
                     break
                 elif k[0]:
                     return sel
@@ -929,11 +965,12 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
     sel = preselect
     need_refr = True
     while retry and not vr("quit_twm"):
-        vr("c").alt_mode = True
-        timeout = time.monotonic()
         retry = False
         vr("waitc")()
+        vr("c").alt_mode = True
+        vr("pkst", True)
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
+        timeout = time.monotonic()
         oldselp = -1
         oldsel = -1
         iteml = len(data)
@@ -987,6 +1024,8 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
                 m = vr("rj")()
                 k = vr("rk")()
                 if k[1]:
+                    retry = True
+                    vr("lm")()
                     break
                 elif k[0]:
                     return sel
@@ -1210,6 +1249,7 @@ vr("suspend", suspend)
 vr("resume", resume)
 vr("str_rotate", str_rotate)
 vr("swipe_unlock", swipe_unlock)
+vr("set_brightness", set_brightness)
 vr("lm", lm)
 vr("vibr", vibr)
 vr("stv", stv)
@@ -1243,6 +1283,7 @@ del (
     resume,
     str_rotate,
     swipe_unlock,
+    set_brightness,
     lm,
     vibr,
     stv,
@@ -1375,6 +1416,7 @@ def shutdown(instant=False) -> None:
             vr("refr")()
             vr("exit_tty", True)
             vr("quit_twm", True)
+            vr("c").alt_mode = False
             raise KeyboardInterrupt
 
 
