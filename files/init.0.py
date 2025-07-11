@@ -332,11 +332,17 @@ def suspend() -> None:
         vr("p")._aldo2_voltage_setpoint = 0
         if target == 40_000_000 and not pv[0]["consoles"]["ttyUSB0"].connected:
             target = 20_000_000
-    cpu.frequency = target
+    try:
+        cpu.frequency = target
+    except:
+        pass
 
 
 def resume() -> None:
-    cpu.frequency = 240_000_000
+    try:
+        cpu.frequency = 240_000_000
+    except:
+        pass
     vr("d").brightness = vr("mainbri")
     vr("p")._bldo2_voltage_setpoint = 3300
     vr("p")._aldo2_voltage_setpoint = 3300
@@ -713,7 +719,10 @@ def lm(start_locked: bool = False) -> None:
                                     be.devices["network"][0].enabled
                                     or pv[0]["consoles"]["ttyUSB0"].connected
                                 ):
-                                    cpu.frequency = 20_000_000
+                                    try:
+                                        cpu.frequency = 20_000_000
+                                    except:
+                                        pass
                         time.sleep(0.2)
                     elif vr("susbri") and (vr("moved")() or vr("rt")()):
                         vr("d").brightness = vr("susbri")

@@ -184,12 +184,14 @@ def rk(only_power: bool = False) -> tuple:
     if vr("stkey") == 10:
         vr("stkey", None)
         return [True, nub]
+    vr("c").alt_mode = True
     if vr("c").in_waiting:
         key = vr("c").read(1)
         vr("c").reset_input_buffer()
     isent = key == "\n"
     if not isent:
         vr("stkey", key)
+    vr("c").alt_mode = vr("pkst")
     return [isent, nub]
 
 
@@ -226,6 +228,8 @@ vr(
 
 def rj() -> str:
     stkey = vr("stkey")
+    stnub = vr("c").alt_mode
+    vr("c").alt_mode = True
     if stkey or vr("c").in_waiting:
         k = stkey or vr("c").read(1)[0]
         if isinstance(k, bytearray):
@@ -238,7 +242,10 @@ def rj() -> str:
         if k == 10:
             vr("stkey", 10)
 
+        vr("c").alt_mode = stnub
+        print("rj: " + str(k))
         return vr("rj_map").get(k, "")
+    vr("c").alt_mode = stnub
     return ""
 
 
@@ -262,8 +269,6 @@ def waitc() -> None:
         t = vr("rt")()
         k = vr("rk")()
         time.sleep(0.02)
-    vr("c").alt_mode = False
-    vr("pkst", False)
 
 
 def wany() -> None:
@@ -383,11 +388,17 @@ def suspend() -> None:
     vr("d").brightness = vr("susbri")
     vr("force_refr", True)
     vr("lowpow", True)
-    cpu.frequency = 80_000_000
+    try:
+        cpu.frequency = 80_000_000
+    except:
+        pass
 
 
 def resume() -> None:
-    cpu.frequency = 240_000_000
+    try:
+        cpu.frequency = 240_000_000
+    except:
+        pass
     vr("d").brightness = vr("mainbri")
     vr("lowpow", False)
     vr("force_refr", True)
@@ -705,11 +716,7 @@ def lm(start_locked: bool = False) -> None:
                     break
 
                 # Inputs
-                vr("c").alt_mode = True
-                vr("pkst", True)
                 m = vr("rj")()
-                vr("c").alt_mode = False
-                vr("pkst", False)
                 t = [False, False] if m else vr("rk")(True)
 
                 if not vr("lowpow"):  # ACTIVE
@@ -865,8 +872,6 @@ def dmenu(
         retry = False
         vr("waitc")()
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
-        vr("c").alt_mode = True
-        vr("pkst", True)
         timeout_c = time.monotonic()
         ysize = vr("c").size[1]
         db = 0
@@ -967,8 +972,6 @@ def slidemenu(title: str, data: list, preselect=0) -> int:
     while retry and not vr("quit_twm"):
         retry = False
         vr("waitc")()
-        vr("c").alt_mode = True
-        vr("pkst", True)
         vr("ctop")(title + "\n" + (vr("c").size[0] * "-"))
         timeout = time.monotonic()
         oldselp = -1
